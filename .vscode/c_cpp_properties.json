@@ -1,0 +1,15 @@
+{
+  "version": 4,
+  "configurations": [
+    {
+      "name": "Linux",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/usr/aarch64-linux-gnu/include",
+        "/opt/sdk/sysroots/cortexa35-ostl-linux/usr/include/**"
+      ],
+      "compilerPath": "/opt/sdk/sysroots/x86_64-ostl_sdk-linux/usr/bin/gcc",
+      "cStandard": "c11"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "name": "Arch Linux Dev Box",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "USERNAME": "vscode",
+      "SDK_TARBALL_NAME": "stm32mp2-openstlinux-6.6-yocto-scarthgap-mpu-v26.06.10",
+      "SDK_TARBALL_FILE": "SDK-x86_64-stm32mp2-openstlinux-6.6-yocto-scarthgap-mpu-v26.06.10.tar.gz",
+      "SDK_TARBALL_PATH": ".."
+    },
+    "options": [
+      "--platform=linux/amd64"
+    ],
+    "context": ".."
+  },
+  "shutdownAction": "stopContainer",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=${containerWorkspaceFolder},type=bind,consistency=cached",
+  "remoteEnv": {
+    "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}",
+    "CONTAINER_WORKSPACE_FOLDER": "${containerWorkspaceFolder}"
+  },
+  "containerEnv": {
+    "COLORTERM": "truecolor"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "rust-client.rustupPath": "/home/vscode/.cargo/bin/rustup"
+      },
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "vadimcn.vscode-lldb",
+        "tamasfe.even-better-toml",
+        "DavidAnson.vscode-markdownlint",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "GitHub.vscode-github-actions",
+        "GitHub.vscode-pull-request-github",
+        "ms-vscode.makefile-tools",
+        "Codecov.codecov",
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cpp-devtools"
+      ]
+    }
+  },
+  "runArgs": [
+    "--name=stm32-tee-dev",
+    "--platform=linux/amd64",
+    "--cap-add=SYS_PTRACE",
+    "--security-opt",
+    "seccomp=unconfined"
+  ],
+  // App port to connect to memory service from the browser on the local network.
+  "appPort": [
+    "0.0.0.0:4747:4747"
+  ],
+  // Forward port 3000 for the web server to be accessible from the host machine.
+  "forwardPorts": [
+    3000
+  ],
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+    // Remove once migration is complete.
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind",
+    "source=${localEnv:HOME}/.local/share/opencode,target=/home/vscode/.local/share/opencode,type=bind",
+    "source=${localEnv:HOME}/.config/opencode,target=/home/vscode/.config/opencode,type=bind",
+    "source=${localEnv:HOME}/.opencode-mem,target=/home/vscode/.opencode-mem,type=bind",
+    "source=${localEnv:HOME}/.bun,target=/home/vscode/.bun,type=bind"
+  ],
+  "remoteUser": "vscode",
+  "postCreateCommand": "source ${containerWorkspaceFolder}/.envrc || true && ${containerWorkspaceFolder}/.devcontainer/commands/post-create.sh",
+  "postStartCommand": "${containerWorkspaceFolder}/.devcontainer/commands/post-start.sh"
+}
