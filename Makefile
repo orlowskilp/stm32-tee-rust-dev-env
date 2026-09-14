@@ -39,7 +39,7 @@ ta:
 	cd ta && cargo build \
 		--target aarch64-unknown-linux-gnu \
 		--release \
-		--config target.aarch64-unknown-linux-gnu.linker="$(CROSS_COMPILE)gcc"
+		--config "target.aarch64-unknown-linux-gnu.linker=\"$(PWD)/cargo-linker-wrapper.sh\""
 	objcopy --strip-unneeded ta/target/aarch64-unknown-linux-gnu/release/hello_world_ta \
 		ta/target/aarch64-unknown-linux-gnu/release/stripped_ta
 	@if [ -n "$(TA_SIGN_KEY)" ] && [ -n "$(TA_SIGN_SCRIPT)" ]; then \
@@ -64,11 +64,11 @@ ta:
 #
 # Usage: make host
 host:
-	cd host_app && cargo build \
-		--target aarch64-unknown-linux-gnu \
-		--release \
-		--config target.aarch64-unknown-linux-gnu.linker="$(CROSS_COMPILE)gcc" \
-		-C link-arg=-lteec
+	cd host_app && \
+		cargo build \
+			--target aarch64-unknown-linux-gnu \
+			--release \
+			--config "target.aarch64-unknown-linux-gnu.linker=\"$(PWD)/cargo-linker-wrapper.sh\""
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
 clean:

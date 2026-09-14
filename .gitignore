@@ -7,3 +7,4 @@ optee_examples/
 **/*.rs.bk
 **/*.rs.bak
 Cargo.lock
+crates/trustzone-sdk
