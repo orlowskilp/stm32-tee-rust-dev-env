@@ -9,31 +9,6 @@ use optee_utee::{ErrorKind, Result};
 pub const TA_CMD_INC_VALUE: u32 = 0;
 pub const TA_CMD_DEC_VALUE: u32 = 1;
 
-/// A user-defined session context.
-/// Implement `Default` so the `#[ta_open_session]` macro can allocate one.
-#[derive(Default)]
-struct MySessionCtx {
-    /// Placeholder for any per-session state you might need.
-    _counter: u32,
-}
-
-/// Command handler: read the value from the host, increment it, log it.
-fn cmd_echo(params: &mut ParameterValueInout) {
-    let val = params.get_a();
-    trace_println!("Hello World!");
-    trace_println!("Got value: {} from normal world", val);
-    params.set_a(val + 1);
-    trace_println!("Echoed (incremented) value to: {}", params.get_a());
-}
-
-/// Command handler: read the value from the host, decrement it, log it.
-fn cmd_dec(params: &mut ParameterValueInout) {
-    let val = params.get_a();
-    trace_println!("Got value: {} from normal world", val);
-    params.set_a(val - 1);
-    trace_println!("Decreased value to: {}", params.get_a());
-}
-
 #[ta_create]
 fn ta_create() -> Result<()> {
     trace_println!("Trusted Application entry point created");
@@ -46,34 +21,39 @@ fn ta_destroy() {
 }
 
 #[ta_open_session]
-fn ta_open_session(
-    _params: &mut ParametersNone,
-    sess_ctx: &mut MySessionCtx,
-) -> Result<()> {
+fn ta_open_session(_params: &mut ParametersNone) -> Result<()> {
     trace_println!("Session opened");
-    sess_ctx._counter = 0;
     Ok(())
 }
 
 #[ta_close_session]
-fn ta_close_session(_sess_ctx: &mut MySessionCtx) {
+fn ta_close_session() {
     trace_println!("Session closed");
 }
 
 #[ta_invoke_command]
 fn ta_invoke_command(
-    _sess_ctx: &mut MySessionCtx,
     cmd_id: u32,
-    params: &mut ParameterValueInout,
+    params: &mut (
+        ParameterValueInout,
+        ParameterNone,
+        ParameterNone,
+        ParameterNone,
+    ),
 ) -> Result<()> {
+    let values = &mut params.0;
     trace_println!("Command invoked: {}", cmd_id);
     match cmd_id {
         TA_CMD_INC_VALUE => {
-            cmd_echo(params);
+            trace_println!("Got value: {} from normal world", values.get_a());
+            values.set_a(values.get_a() + 1);
+            trace_println!("Echoed (incremented) value to: {}", values.get_a());
             Ok(())
         }
         TA_CMD_DEC_VALUE => {
-            cmd_dec(params);
+            trace_println!("Got value: {} from normal world", values.get_a());
+            values.set_a(values.get_a() - 1);
+            trace_println!("Decreased value to: {}", values.get_a());
             Ok(())
         }
         _ => Err(ErrorKind::BadParameters.into()),

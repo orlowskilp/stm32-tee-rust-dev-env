@@ -23,6 +23,8 @@ TA_SIGN_SCRIPT ?= $(TA_DEV_KIT_DIR)/scripts/sign_encrypt.py
 # ── TA UUID ───────────────────────────────────────────────────────────────────
 UUID := $(shell cat ta/uuid.txt)
 
+all: ta host
+
 # ── Build the Trusted Application (TA) for ARM64 ──────────────────────────────
 #
 # Steps: cargo build → objcopy strip → sign_encrypt.py
@@ -36,11 +38,14 @@ UUID := $(shell cat ta/uuid.txt)
 # Usage: make ta [TA_SIGN_KEY=key.pem]
 ta:
 	@echo "=== Building TA (UUID=$(UUID)) ==="
-	cd ta && cargo build \
-		--target aarch64-unknown-linux-gnu \
-		--release \
-		--config "target.aarch64-unknown-linux-gnu.linker=\"$(PWD)/cargo-linker-wrapper.sh\""
-	objcopy --strip-unneeded ta/target/aarch64-unknown-linux-gnu/release/hello_world_ta \
+	@cd ta && \
+		CC=cc \
+		RUSTC_LINKER=ld \
+		cargo build \
+			--target aarch64-unknown-linux-gnu \
+			--release \
+			--config "target.aarch64-unknown-linux-gnu.linker=\"$(PWD)/cargo-linker-wrapper.sh\""
+	@$(CROSS_COMPILE)objcopy --strip-unneeded ta/target/aarch64-unknown-linux-gnu/release/hello_world_ta \
 		ta/target/aarch64-unknown-linux-gnu/release/stripped_ta
 	@if [ -n "$(TA_SIGN_KEY)" ] && [ -n "$(TA_SIGN_SCRIPT)" ]; then \
 		python3 $(TA_SIGN_SCRIPT) --uuid $(UUID) --key $(TA_SIGN_KEY) \
@@ -64,7 +69,7 @@ ta:
 #
 # Usage: make host
 host:
-	cd host_app && \
+	@cd host_app && \
 		cargo build \
 			--target aarch64-unknown-linux-gnu \
 			--release \
@@ -72,8 +77,8 @@ host:
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
 clean:
-	cd ta && cargo clean
-	cd host_app && cargo clean
+	@cd ta && cargo clean
+	@cd host_app && cargo clean
 
 # ── Deploy ────────────────────────────────────────────────────────────────────
 # Deploy the TA and host app to an STM32MP2 board running OP-TEE.
@@ -90,11 +95,11 @@ deploy:
 		exit 1; \
 	fi
 	@echo "=== Deploying TA ==="
-	scp ta/target/aarch64-unknown-linux-gnu/release/$(UUID).ta root@$(BOARD_ADDRESS):/usr/lib/tee-datasync/
+	@scp ta/target/aarch64-unknown-linux-gnu/release/$(UUID).ta root@$(BOARD_ADDRESS):/usr/lib/tee-datasync/
 	@echo "=== Deploying host app ==="
-	scp host_app/target/aarch64-unknown-linux-gnu/release/hello_world_host root@$(BOARD_ADDRESS):/root/
+	@scp host_app/target/aarch64-unknown-linux-gnu/release/hello_world_host root@$(BOARD_ADDRESS):/root/
 	@echo "=== Deployed. Run on board:"
-	@echo "  ssh root@$(BOARD_ADDRESS) ./hello_world_host"
+	@echo "  ssh $(shell whoami)@$(BOARD_ADDRESS) ./hello_world_host"
 
 # ── Format ────────────────────────────────────────────────────────────────────
 format: check-dprint
@@ -103,4 +108,4 @@ format: check-dprint
 check-dprint:
 	@command -v dprint >/dev/null 2>&1 || (echo "dprint is not installed. Please install it to build the project." && exit 1)
 
-.PHONY: ta host clean deploy format check-cargo check-dprint
+.PHONY: all ta host clean deploy format check-cargo check-dprint

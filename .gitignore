@@ -8,3 +8,6 @@ optee_examples/
 **/*.rs.bak
 Cargo.lock
 crates/trustzone-sdk
+
+# TA build artifacts
+ta/dyn_list
