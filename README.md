@@ -37,7 +37,7 @@ All cross-compilation environment variables (`CROSS_COMPILE`, `OECORE_TARGET_SYS
 The project implements a two-world boundary. The host application runs in Normal World (Linux) and communicates with the Trusted Application in Secure World (OP-TEE TEE) through the OP-TEE Client API.
 
 ```mermaid
-graph LR
+graph TD
     subgraph NormalWorld["Normal World (Linux)"]
         H["host/src/main.rs\nRust host app"]
         TEEC["optee-teec (Rust crate)"]
