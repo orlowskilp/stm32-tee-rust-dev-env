@@ -86,7 +86,7 @@ Alternatively, do it by hand:
 scp ta/target/aarch64-unknown-linux-gnu/release/$(cat ta/uuid.txt).ta root@<your-board-address>:/usr/lib/tee-datasync/
 
 # Deploy the host app
-scp host_app/target/aarch64-unknown-linux-gnu/release/hello_world_host root@<your-board-address>:/root/
+scp host/target/aarch64-unknown-linux-gnu/release/hello_world_host root@<your-board-address>:/root/
 ```
 
 ## Step 4 — Run
@@ -118,16 +118,20 @@ dmesg | grep optee
 ```text
 .
 ├── ta/                       # Trusted Application (runs in Secure World)
+│   ├── Makefile              # TA build: ta, clean (delegated from root)
 │   ├── Cargo.toml            # rustc target + optee-utee deps
+│   ├── build.rs              # TA header generation (optee-utee-build)
 │   ├── src/main.rs           # TA entry points: create, open_session, invoke_command, close_session, destroy
 │   └── uuid.txt              # TA UUID (128-bit)
-├── host_app/                 # Host application (runs in Normal World / Linux)
+├── host/                     # Host application (runs in Normal World / Linux)
+│   ├── Makefile              # Host build: host, clean (delegated from root)
 │   ├── Cargo.toml            # optee-teec deps
 │   ├── build.rs              # Cross-compilation metadata
 │   └── src/main.rs           # Opens session, invokes commands, reads results
 ├── crates/
 │   └── trustzone-sdk/        # Apache Teaclave SDK (cloned in Step 1)
-├── Makefile                  # Top-level build: ta, host, clean, deploy
+├── Makefile                  # Top-level build: delegates to ta/ and host/
+├── cargo-linker-wrapper.sh   # Injects --sysroot for cross-compilation
 ├── rust-toolchain.toml       # Rust toolchain config (already present)
 └── .envrc                    # SDK environment setup (already present)
 ```
@@ -138,7 +142,7 @@ dmesg | grep optee
 ┌──────────────────────────────────────────┐
 │  STM32MP2 Normal World (Linux)           │
 │                                          │
-│  host_app/src/main.rs                    │
+│  host/src/main.rs                        │
 │    └─→ optee-teec (crate)                │
 │         └─→ libteec.so (OP-TEE Client)   │
 │              └─→ TEE driver (kernel) ────┼──► Secure World
@@ -158,7 +162,7 @@ dmesg | grep optee
 
 ### Change the TA UUID
 
-Edit `ta/uuid.txt` and update the `TA_UUID` constant in `host_app/src/main.rs` to match. The UUID must be identical in both places.
+Edit `ta/uuid.txt` and update the `TA_UUID` constant in `host/src/main.rs` to match. The UUID must be identical in both places.
 
 ### Add new commands
 
