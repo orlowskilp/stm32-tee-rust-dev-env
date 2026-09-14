@@ -1,6 +1,7 @@
 *.tar.gz
 **/.env*
 optee_examples/
+!.envrc.example
 
 # Rust build artifacts
 **/target/

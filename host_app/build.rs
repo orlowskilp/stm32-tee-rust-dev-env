@@ -1,4 +1,4 @@
-//! Build script for hello_world_host.
+//! Build script for hello world host application.
 //!
 //! Configures cross-compilation metadata and linker flags for OP-TEE host apps.
 

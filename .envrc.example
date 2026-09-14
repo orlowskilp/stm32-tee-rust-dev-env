@@ -1,0 +1,21 @@
+# Source the Yocto SDK environment — sets CROSS_COMPILE, CC, sysroots, etc.
+source /opt/sdk/environment-setup
+
+# OP-TEE TA dev kit — exported by source but kept explicit for clarity.
+export TA_DEV_KIT_DIR=/opt/sdk/sysroots/cortexa35-ostl-linux/usr/include/optee/export-user_ta_arm64
+
+# OP-TEE client SDK — used by host app builds to find libteec.so and headers.
+export OPTEE_CLIENT_EXPORT=/opt/sdk/sysroots/cortexa35-ostl-linux
+
+# TA signing — default test keys shipped by the SDK (for development only).
+# See the "Signing Keys" section in QUICKSTART.md for board-specific keys.
+export TA_SIGN_KEY_DEFAULT_KEYS="${TA_DEV_KIT_DIR}/keys/default_ta.pem"
+
+# OP-TEE signing script location
+export TA_SIGN_SCRIPT="${TA_DEV_KIT_DIR}/scripts/sign_encrypt.py"
+
+# opencode-mem web server API token
+export OPENCODE_MEM_WEB_TOKEN="$(openssl rand -hex 16)"
+
+# Board address for the target device. Replace <FILL-ME!> with the actual address.
+export BOARD_ADDRESS="<FILL-ME!>"
