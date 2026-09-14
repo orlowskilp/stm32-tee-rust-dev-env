@@ -5,9 +5,13 @@
 #   CROSS_COMPILE  - cross-compiler prefix (e.g. aarch64-ostl-linux-)
 #   TA_SIGN_KEY    - path to TA signing key
 #   TA_SIGN_SCRIPT - path to sign_encrypt.py
+#   TARGET         - cargo target triple (default: aarch64-unknown-linux-gnu)
 
 # ── TA UUID ────────────────────────────────────────────────────────────────────
 UUID := $(shell cat uuid.txt)
+
+# ── Build Target ──────────────────────────────────────────────────────────────
+TARGET ?= aarch64-unknown-linux-gnu
 
 .PHONY: all ta clean format lint
 
@@ -19,20 +23,20 @@ ta:
 	@CC=cc \
 		RUSTC_LINKER=ld \
 		cargo build \
-			--target aarch64-unknown-linux-gnu \
+			--target $(TARGET) \
 			--release \
-			--config "target.aarch64-unknown-linux-gnu.linker=\"$(LINKER_WRAPPER)\""
+			--config "target.$(TARGET).linker=\"$(LINKER_WRAPPER)\""
 	@$(CROSS_COMPILE)objcopy --strip-unneeded \
-		target/aarch64-unknown-linux-gnu/release/hello_world_ta \
-		target/aarch64-unknown-linux-gnu/release/stripped_ta
+		target/$(TARGET)/release/hello_world_ta \
+		target/$(TARGET)/release/stripped_ta
 	@if [ -n "$(TA_SIGN_KEY)" ] && [ -n "$(TA_SIGN_SCRIPT)" ]; then \
 		python3 $(TA_SIGN_SCRIPT) --uuid $(UUID) --key $(TA_SIGN_KEY) \
-			--in target/aarch64-unknown-linux-gnu/release/stripped_ta \
-			--out target/aarch64-unknown-linux-gnu/release/$(UUID).ta; \
-		echo "=== TA signed: target/aarch64-unknown-linux-gnu/release/$(UUID).ta ==="; \
+			--in target/$(TARGET)/release/stripped_ta \
+			--out target/$(TARGET)/release/$(UUID).ta; \
+		echo "=== TA signed: target/$(TARGET)/release/$(UUID).ta ==="; \
 	else \
-		cp target/aarch64-unknown-linux-gnu/release/stripped_ta \
-			target/aarch64-unknown-linux-gnu/release/$(UUID).ta; \
+		cp target/$(TARGET)/release/stripped_ta \
+			target/$(TARGET)/release/$(UUID).ta; \
 		echo "=== WARNING: TA signed (unsigned) ==="; \
 		echo "Set TA_SIGN_KEY and TA_SIGN_SCRIPT to produce a signed TA."; \
 	fi
@@ -48,16 +52,16 @@ lint:
 	@CC=cc \
 		RUSTC_LINKER=ld \
 		cargo check \
-			--target aarch64-unknown-linux-gnu \
+			--target $(TARGET) \
 			--release \
 			--bins \
-			--config "target.aarch64-unknown-linux-gnu.linker=\"$(LINKER_WRAPPER)\""
+			--config "target.$(TARGET).linker=\"$(LINKER_WRAPPER)\""
 	@cargo fmt --check
 	@CC=cc \
 		RUSTC_LINKER=ld \
 		cargo clippy \
-			--target aarch64-unknown-linux-gnu \
+			--target $(TARGET) \
 			--release \
 			--bins \
-			--config "target.aarch64-unknown-linux-gnu.linker=\"$(LINKER_WRAPPER)\"" \
+			--config "target.$(TARGET).linker=\"$(LINKER_WRAPPER)\"" \
 			-- -D warnings

@@ -20,9 +20,26 @@ TA_SIGN_KEY ?= $(TA_DEV_KIT_DIR)/keys/default_ta.pem
 # sign_encrypt.py lives inside the TA dev kit export.
 TA_SIGN_SCRIPT ?= $(TA_DEV_KIT_DIR)/scripts/sign_encrypt.py
 
+# ── OP-TEE Client SDK ────────────────────────────────────────────────────────
+# Path to the OP-TEE client export directory (contains libteec.so and headers).
+# Override with -e to use a different path.
+OPTEE_CLIENT_EXPORT ?= /opt/sdk/sysroots/cortexa35-ostl-linux
+
 # ── Linker Wrapper ────────────────────────────────────────────────────────────
 # Path to the cargo linker wrapper script that injects --sysroot.
 LINKER_WRAPPER := $(abspath cargo-linker-wrapper.sh)
+
+# ── Build Target ───────────────────────────────────────────────────────────────
+# Cross-compilation target for STM32MP2. Override with -e or env var to target
+# a different platform.
+TARGET ?= aarch64-unknown-linux-gnu
+
+# ── Environment Variables ─────────────────────────────────────────────────────
+# Defaults for cross-compilation and OP-TEE SDK paths.
+# These allow lint/build to work even if .envrc hasn't been sourced.
+CROSS_COMPILE ?= aarch64-ostl-linux-
+OECORE_TARGET_SYSROOT ?= /opt/sdk/sysroots/cortexa35-ostl-linux
+TA_DEV_KIT_DIR ?= /opt/sdk/sysroots/cortexa35-ostl-linux/usr/include/optee/export-user_ta_arm64
 
 .PHONY: all ta host clean deploy format lint check-dprint check-cargo
 
@@ -30,20 +47,23 @@ all: ta host
 
 # ── Build TA ───────────────────────────────────────────────────────────────────
 # Delegates to ta/Makefile with required variables.
-ta:
+ta: check-cargo
 	@$(MAKE) -C ta \
 		CROSS_COMPILE=$(CROSS_COMPILE) \
 		TA_SIGN_KEY=$(TA_SIGN_KEY) \
 		TA_SIGN_SCRIPT=$(TA_SIGN_SCRIPT) \
-		LINKER_WRAPPER=$(LINKER_WRAPPER)
+		LINKER_WRAPPER=$(LINKER_WRAPPER) \
+		TARGET=$(TARGET)
 
 # ── Build Host ─────────────────────────────────────────────────────────────────
 # Delegates to host/Makefile.
-host:
-	@$(MAKE) -C host LINKER_WRAPPER=$(LINKER_WRAPPER)
+host: check-cargo
+	@$(MAKE) -C host \
+		LINKER_WRAPPER=$(LINKER_WRAPPER) \
+		TARGET=$(TARGET)
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
-clean:
+clean: check-cargo
 	@$(MAKE) -C ta clean
 	@$(MAKE) -C host clean
 
@@ -62,21 +82,31 @@ deploy:
 		exit 1; \
 	fi
 	@echo "=== Deploying TA ==="
-	@scp ta/target/aarch64-unknown-linux-gnu/release/$(shell cat ta/uuid.txt).ta root@$(BOARD_ADDRESS):/usr/lib/tee-datasync/
+	@scp ta/target/$(TARGET)/release/$(shell cat ta/uuid.txt).ta root@$(BOARD_ADDRESS):/usr/lib/tee-datasync/
 	@echo "=== Deploying host app ==="
-	@scp host/target/aarch64-unknown-linux-gnu/release/hello_world_host root@$(BOARD_ADDRESS):/root/
+	@scp host/target/$(TARGET)/release/hello_world_host root@$(BOARD_ADDRESS):/root/
 	@echo "=== Deployed. Run on board:"
 	@echo "  ssh $(shell whoami)@$(BOARD_ADDRESS) ./hello_world_host"
 
 # ── Format ────────────────────────────────────────────────────────────────────
-format: check-dprint
+format: check-cargo check-dprint
 	@dprint fmt
-	$(MAKE) -C ta format
-	$(MAKE) -C host format
+	@$(MAKE) -C ta format
+	@$(MAKE) -C host format
 
 lint: check-cargo check-dprint
-	$(MAKE) -C ta lint
-	$(MAKE) -C host lint
+	@$(MAKE) -C ta lint \
+		CROSS_COMPILE=$(CROSS_COMPILE) \
+		TA_SIGN_KEY=$(TA_SIGN_KEY) \
+		TA_SIGN_SCRIPT=$(TA_SIGN_SCRIPT) \
+		LINKER_WRAPPER=$(LINKER_WRAPPER) \
+		TARGET=$(TARGET)
+	@$(MAKE) -C host lint \
+		LINKER_WRAPPER=$(LINKER_WRAPPER) \
+		CROSS_COMPILE=$(CROSS_COMPILE) \
+		OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
+		TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
+		TARGET=$(TARGET)
 
 
 check-dprint:

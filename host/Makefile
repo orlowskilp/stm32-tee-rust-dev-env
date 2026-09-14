@@ -1,18 +1,22 @@
 # ── Host App Build ────────────────────────────────────────────────────────────
 # Build the host application for ARM64.
 #
-# No special variables required from parent.
+# Variables required from parent:
+#   TARGET         - cargo target triple (default: aarch64-unknown-linux-gnu)
 
 .PHONY: all host clean format lint
 
 all: host
 
+# ── Build Target ──────────────────────────────────────────────────────────────
+TARGET ?= aarch64-unknown-linux-gnu
+
 # Build the host application
 host:
 	@cargo build \
-		--target aarch64-unknown-linux-gnu \
+		--target $(TARGET) \
 		--release \
-		--config "target.aarch64-unknown-linux-gnu.linker=\"$(LINKER_WRAPPER)\""
+		--config "target.$(TARGET).linker=\"$(LINKER_WRAPPER)\""
 
 clean:
 	@cargo clean
