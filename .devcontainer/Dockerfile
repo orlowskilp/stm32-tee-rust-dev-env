@@ -33,6 +33,7 @@ RUN pacman -Suy --disable-sandbox --noconfirm \
     diffutils \
     bash-completion \
     python \
+    aws-cli \
     github-cli \
     jq \
     bun \

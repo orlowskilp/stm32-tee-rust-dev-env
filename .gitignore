@@ -2,6 +2,7 @@
 **/.env*
 optee_examples/
 !.envrc.example
+.aws
 
 # Rust build artifacts
 **/target/
