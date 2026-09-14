@@ -1,0 +1,5 @@
+# Placeholder for trustzone-sdk submodule.
+# Run: git submodule update --init crates/trustzone-sdk
+# after cloning the repo, or manually:
+#   cd crates && git clone <trustzone-sdk-url> trustzone-sdk
+.gitkeep
