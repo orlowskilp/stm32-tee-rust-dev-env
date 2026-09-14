@@ -1,3 +1,9 @@
 *.tar.gz
 **/.env*
 optee_examples/
+
+# Rust build artifacts
+**/target/
+**/*.rs.bk
+**/*.rs.bak
+Cargo.lock

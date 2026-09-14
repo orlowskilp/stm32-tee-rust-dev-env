@@ -81,4 +81,12 @@ deploy:
 	@echo "=== Deployed. Run on board:"
 	@echo "  ssh root@$(BOARD_IP) ./hello_world_host"
 
-.PHONY: ta host clean deploy
+# Format codebase
+format: check-dprint
+		dprint fmt
+
+# Check dprint
+check-dprint:
+		@command -v dprint >/dev/null 2>&1 || (echo "dprint is not installed. Please install it to build the project." && exit 1)
+
+.PHONY: ta host clean deploy format check-cargo check-dprint

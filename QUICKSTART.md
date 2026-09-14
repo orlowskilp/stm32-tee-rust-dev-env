@@ -72,7 +72,7 @@ ssh root@<board-ip> ./hello_world_host
 
 Expected output:
 
-```
+```text
 Sending value to TA: 42
 TA echoed (incremented) value to 43
 TA decreased value back to 42
@@ -90,7 +90,7 @@ dmesg | grep optee
 
 ## Project Structure
 
-```
+```text
 .
 ├── ta/                       # Trusted Application (runs in Secure World)
 │   ├── Cargo.toml            # rustc target + optee-utee deps
