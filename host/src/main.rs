@@ -1,6 +1,4 @@
-use optee_teec::{
-    Context, Operation, ParamNone, ParamType, ParamValue, Uuid,
-};
+use optee_teec::{Context, Operation, ParamNone, ParamType, ParamValue, Uuid};
 
 /// UUID of the hello_world_ta Trusted Application.
 /// Must match the UUID in ta/uuid.txt.
@@ -37,7 +35,13 @@ fn main() -> optee_teec::Result<()> {
     println!("TA echoed (incremented) value to {}", value);
 
     // 9. (Optional) Invoke command 1 (decrement) to verify round-trip.
-    let mut operation2 = Operation::new(0, ParamValue::new(value, 0, ParamType::ValueInout), ParamNone, ParamNone, ParamNone);
+    let mut operation2 = Operation::new(
+        0,
+        ParamValue::new(value, 0, ParamType::ValueInout),
+        ParamNone,
+        ParamNone,
+        ParamNone,
+    );
     session.invoke_command(TA_CMD_DEC_VALUE, &mut operation2)?;
     let value2 = operation2.parameters().0.a();
     println!("TA decreased value back to {}", value2);

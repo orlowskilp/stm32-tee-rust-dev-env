@@ -3,21 +3,17 @@
 //! Configures cross-compilation metadata and linker flags for the TA.
 
 use optee_utee_build::{Builder, LinkerType, TaConfig};
-use std::{process, fs, path::Path, env};
+use std::{env, fs, path::Path, process};
 
 fn main() {
     let uuid = fs::read_to_string("uuid.txt").expect("uuid.txt");
-    let ta_config = TaConfig::new_default(uuid.trim(), "0.1.0", "Hello World")
-        .expect("ta config");
+    let ta_config = TaConfig::new_default(uuid.trim(), "0.1.0", "Hello World").expect("ta config");
     // gcc-ld is the linker driver (rustc passes -B.../gcc-ld -fuse-ld=lld),
     // so args need the -Wl, prefix even though the underlying linker is lld.
     // rust-lld resolves --dynamic-list relative to OUT_DIR at link time, but
     // with gcc as driver it can't find files there. Copy dyn_list to CWD so
     // the linker finds it.
-    if let Err(err) = Builder::new(ta_config)
-        .linker_type(LinkerType::Cc)
-        .build()
-    {
+    if let Err(err) = Builder::new(ta_config).linker_type(LinkerType::Cc).build() {
         eprintln!("Build error: {err:?}");
         process::abort();
     }

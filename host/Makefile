@@ -3,7 +3,7 @@
 #
 # No special variables required from parent.
 
-.PHONY: all host clean
+.PHONY: all host clean format lint
 
 all: host
 
@@ -16,3 +16,13 @@ host:
 
 clean:
 	@cargo clean
+
+
+format:
+	@cargo fmt
+
+lint:
+	@dprint check
+	@cargo check --all-targets
+	@cargo fmt --check
+	@cargo clippy --all-targets -- -D warnings

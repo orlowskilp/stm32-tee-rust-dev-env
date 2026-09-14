@@ -24,6 +24,8 @@ TA_SIGN_SCRIPT ?= $(TA_DEV_KIT_DIR)/scripts/sign_encrypt.py
 # Path to the cargo linker wrapper script that injects --sysroot.
 LINKER_WRAPPER := $(abspath cargo-linker-wrapper.sh)
 
+.PHONY: all ta host clean deploy format lint check-dprint check-cargo
+
 all: ta host
 
 # ── Build TA ───────────────────────────────────────────────────────────────────
@@ -68,9 +70,17 @@ deploy:
 
 # ── Format ────────────────────────────────────────────────────────────────────
 format: check-dprint
-	dprint fmt
+	@dprint fmt
+	$(MAKE) -C ta format
+	$(MAKE) -C host format
+
+lint: check-cargo check-dprint
+	$(MAKE) -C ta lint
+	$(MAKE) -C host lint
+
 
 check-dprint:
-	@command -v dprint >/dev/null 2>&1 || (echo "dprint is not installed. Please install it to build the project." && exit 1)
+	@command -v dprint >/dev/null 2>&1 || (echo "dprint is not installed." && exit 1)
 
-.PHONY: all ta host clean deploy format check-dprint
+check-cargo:
+	@command -v cargo >/dev/null 2>&1 || (echo "cargo is not installed." && exit 1)

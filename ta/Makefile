@@ -9,7 +9,7 @@
 # ── TA UUID ────────────────────────────────────────────────────────────────────
 UUID := $(shell cat uuid.txt)
 
-.PHONY: all ta clean
+.PHONY: all ta clean format lint
 
 all: ta
 
@@ -39,3 +39,25 @@ ta:
 
 clean:
 	@cargo clean
+
+format:
+	@cargo fmt
+
+lint:
+	@dprint check
+	@CC=cc \
+		RUSTC_LINKER=ld \
+		cargo check \
+			--target aarch64-unknown-linux-gnu \
+			--release \
+			--bins \
+			--config "target.aarch64-unknown-linux-gnu.linker=\"$(LINKER_WRAPPER)\""
+	@cargo fmt --check
+	@CC=cc \
+		RUSTC_LINKER=ld \
+		cargo clippy \
+			--target aarch64-unknown-linux-gnu \
+			--release \
+			--bins \
+			--config "target.aarch64-unknown-linux-gnu.linker=\"$(LINKER_WRAPPER)\"" \
+			-- -D warnings
