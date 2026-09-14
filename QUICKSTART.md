@@ -13,7 +13,7 @@ Get a Rust TA + host app building and running on your STM32MP2 board in five ste
 source .envrc
 ```
 
-This sets `CROSS_COMPILE`, `TA_DEV_KIT_DIR`, and the sysroot paths.
+This sets `CROSS_COMPILE`, `TA_DEV_KIT_DIR`, `OPTEE_CLIENT_EXPORT`, `BOARD_ADDRESS`, and the sysroot paths.
 
 ## Step 1 — Clone the TrustZone SDK
 
@@ -38,18 +38,43 @@ make host
 
 ### TA Signing
 
-The `make ta` target attempts to sign the TA binary using `sign_encrypt.py`. It searches for `ta_sign_key.pem` inside the SDK sysroot automatically. If the key is not found, the TA is built unsigned (you will see a warning).
-
-To manually provide the signing key and script:
+The `make ta` target signs the TA binary using `sign_encrypt.py`.
+Both the signing script and the default signing key are configured by the Makefile's
+variable defaults, which source paths from `.envrc`.
+Override `TA_SIGN_KEY` only when using a custom key.
 
 ```bash
-make ta TA_SIGN_KEY=/path/to/key.pem TA_SIGN_SCRIPT=/path/to/sign_encrypt.py
+make ta TA_SIGN_KEY=/path/to/key.pem
 ```
+
+#### RSA Signing Keys
+
+The default test key shipped by the SDK at `$(TA_DEV_KIT_DIR)/keys/default_ta.pem`
+(resolving to `/opt/sdk/sysroots/cortexa35-ostl-linux/usr/include/optee/export-user_ta_arm64/keys/default_ta.pem`)
+is a 2048-bit RSA key suitable for development. The default signing algorithm is
+`TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA256` — RSA-PSS with SHA-256.
+
+For production, the board requires a unique TA signing key. The board's OP-TEE OS
+was built with a specific key embedded in the core, and TAs must be signed with the
+matching private key.
+
+Generate a new key pair:
+
+```bash
+openssl genrsa -out my_ta_key.pem 2048
+openssl rsa -in my_ta_key.pem -pubout -out my_ta_key_pub.pem
+```
+
+Use it with `make ta TA_SIGN_KEY=/path/to/my_ta_key.pem`.
+To use the default SDK key, run `make ta` without overrides — it is the Makefile default.
+
+RSA is the only supported signing algorithm for TAs. ECDSA is not supported by
+OP-TEE's TA signature mechanism.
 
 ## Step 3 — Deploy
 
 ```bash
-make deploy BOARD_IP=<your-board-ip>
+make deploy BOARD_ADDRESS=<your-board-address>
 ```
 
 This SCPs the signed TA binary to `/usr/lib/tee-datasync/` on the board and the host app to `/root/`.
@@ -58,16 +83,16 @@ Alternatively, do it by hand:
 
 ```bash
 # Deploy the TA
-scp ta/target/aarch64-unknown-linux-gnu/release/$(cat ta/uuid.txt).ta root@<board-ip>:/usr/lib/tee-datasync/
+scp ta/target/aarch64-unknown-linux-gnu/release/$(cat ta/uuid.txt).ta root@<your-board-address>:/usr/lib/tee-datasync/
 
 # Deploy the host app
-scp host_app/target/aarch64-unknown-linux-gnu/release/hello_world_host root@<board-ip>:/root/
+scp host_app/target/aarch64-unknown-linux-gnu/release/hello_world_host root@<your-board-address>:/root/
 ```
 
 ## Step 4 — Run
 
 ```bash
-ssh root@<board-ip> ./hello_world_host
+ssh root@<your-board-address> ./hello_world_host
 ```
 
 Expected output:
@@ -98,7 +123,7 @@ dmesg | grep optee
 │   └── uuid.txt              # TA UUID (128-bit)
 ├── host_app/                 # Host application (runs in Normal World / Linux)
 │   ├── Cargo.toml            # optee-teec deps
-│   ├── build.rs              # Build script placeholder
+│   ├── build.rs              # Cross-compilation metadata
 │   └── src/main.rs           # Opens session, invokes commands, reads results
 ├── crates/
 │   └── trustzone-sdk/        # Apache Teaclave SDK (cloned in Step 1)
@@ -113,7 +138,7 @@ dmesg | grep optee
 ┌──────────────────────────────────────────┐
 │  STM32MP2 Normal World (Linux)           │
 │                                          │
-│  hello_world_host.rs                     │
+│  host_app/src/main.rs                    │
 │    └─→ optee-teec (crate)                │
 │         └─→ libteec.so (OP-TEE Client)   │
 │              └─→ TEE driver (kernel) ────┼──► Secure World
@@ -122,7 +147,7 @@ dmesg | grep optee
 ┌──────────────────────────────────────────┐
 │  STM32MP2 Secure World (OP-TEE TEE)      │
 │                                          │
-│  hello_world_ta.rs                       │
+│  ta/src/main.rs                          │
 │    └─→ optee-utee (crate)                │
 │         └─→ libutee.a (OP-TEE TA API)    │
 │              └─→ OP-TEE OS core          │

@@ -1,22 +1,35 @@
-CROSS_COMPILE ?= aarch64-linux-gnu-
+# ── Environment Setup ──────────────────────────────────────────────────────────
+#
+# The container sets these via devcontainer.json or by sourcing .envrc which
+# calls /opt/sdk/environment-setup:
+#
+#   TA_DEV_KIT_DIR     = /opt/sdk/sysroots/.../export-user_ta_arm64
+#   CROSS_COMPILE      = aarch64-ostl-linux-
+#   OPTEE_CLIENT_EXPORT= /opt/sdk/sysroots/cortexa35-ostl-linux/usr
+#   OECORE_TARGET_SYSROOT = /opt/sdk/sysroots/cortexa35-ostl-linux
+#
+# Override any of these by setting them before invoking make.
 
-# TA signing key — must match the key used to build OP-TEE on your board.
-# Generated during optee_os build (ta_sign_key.pem or similar).
-# If using the Yocto SDK default:
-TA_SIGN_KEY ?= $(shell find /opt/sdk/sysroots -name "ta_sign_key.pem" -type f 2>/dev/null | head -1)
+# ── OP-TEE Signing ─────────────────────────────────────────────────────────────
+#
+# Default test key shipped by the SDK. Suitable for development only — it is
+# NOT bound to your board's OP-TEE instance. Use this to develop and test
+# before switching to the board-specific key (see QUICKSTART.md).
+TA_SIGN_KEY ?= $(TA_DEV_KIT_DIR)/keys/default_ta.pem
 
-# OP-TEE signing script from optee_os (used to sign encrypted TA binaries).
-TA_SIGN_SCRIPT ?= $(shell find /workspace -name "sign_encrypt.py" -type f 2>/dev/null | head -1)
+# sign_encrypt.py lives inside the TA dev kit export.
+TA_SIGN_SCRIPT ?= $(TA_DEV_KIT_DIR)/scripts/sign_encrypt.py
 
-# UUID of the hello_world TA — must match uuid.txt in ta/.
+# ── TA UUID ───────────────────────────────────────────────────────────────────
 UUID := $(shell cat ta/uuid.txt)
 
-# Build the Trusted Application (TA) for ARM64.
+# ── Build the Trusted Application (TA) for ARM64 ──────────────────────────────
+#
 # Steps: cargo build → objcopy strip → sign_encrypt.py
 #
 # Prerequisites:
 #   - trustzone-sdk submodule under crates/ must be initialized
-#   - TA_DEV_KIT_DIR set from the SDK environment (source .envrc)
+#   - TA_DEV_KIT_DIR set (exported by devcontainer.json / .envrc)
 #   - TA_SIGN_KEY must point to the TA signing private key
 #   - TA_SIGN_SCRIPT must point to optee_os's sign_encrypt.py
 #
@@ -41,7 +54,8 @@ ta:
 		echo "Set TA_SIGN_KEY and TA_SIGN_SCRIPT in the Makefile to produce a signed TA."; \
 	fi
 
-# Build the host application for ARM64.
+# ── Build the host application for ARM64 ──────────────────────────────────────
+#
 # Links against libteec.so from the optee_client export.
 #
 # Prerequisites:
@@ -56,11 +70,12 @@ host:
 		--config target.aarch64-unknown-linux-gnu.linker="$(CROSS_COMPILE)gcc" \
 		-C link-arg=-lteec
 
-# Clean all build artifacts.
+# ── Clean ─────────────────────────────────────────────────────────────────────
 clean:
 	cd ta && cargo clean
 	cd host_app && cargo clean
 
+# ── Deploy ────────────────────────────────────────────────────────────────────
 # Deploy the TA and host app to an STM32MP2 board running OP-TEE.
 #
 # Prerequisites:
@@ -68,25 +83,24 @@ clean:
 #   - OP-TEE OS running on the board
 #   - TA binary copied to the board's TA store (e.g. /usr/lib/tee-datasync/)
 #
-# Usage: make deploy BOARD_IP=<board-ip>
+# Usage: make deploy BOARD_ADDRESS=<board-address>
 deploy:
-	@if [ -z "$(BOARD_IP)" ]; then \
-		echo "Usage: make deploy BOARD_IP=<board-ip>"; \
+	@if [ -z "$(BOARD_ADDRESS)" ]; then \
+		echo "Usage: make deploy BOARD_ADDRESS=<board-address>"; \
 		exit 1; \
 	fi
 	@echo "=== Deploying TA ==="
-	scp ta/target/aarch64-unknown-linux-gnu/release/$(UUID).ta root@$(BOARD_IP):/usr/lib/tee-datasync/
+	scp ta/target/aarch64-unknown-linux-gnu/release/$(UUID).ta root@$(BOARD_ADDRESS):/usr/lib/tee-datasync/
 	@echo "=== Deploying host app ==="
-	scp host_app/target/aarch64-unknown-linux-gnu/release/hello_world_host root@$(BOARD_IP):/root/
+	scp host_app/target/aarch64-unknown-linux-gnu/release/hello_world_host root@$(BOARD_ADDRESS):/root/
 	@echo "=== Deployed. Run on board:"
-	@echo "  ssh root@$(BOARD_IP) ./hello_world_host"
+	@echo "  ssh root@$(BOARD_ADDRESS) ./hello_world_host"
 
-# Format codebase
+# ── Format ────────────────────────────────────────────────────────────────────
 format: check-dprint
-		dprint fmt
+	dprint fmt
 
-# Check dprint
 check-dprint:
-		@command -v dprint >/dev/null 2>&1 || (echo "dprint is not installed. Please install it to build the project." && exit 1)
+	@command -v dprint >/dev/null 2>&1 || (echo "dprint is not installed. Please install it to build the project." && exit 1)
 
 .PHONY: ta host clean deploy format check-cargo check-dprint
