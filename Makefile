@@ -41,7 +41,7 @@ CROSS_COMPILE ?= aarch64-ostl-linux-
 OECORE_TARGET_SYSROOT ?= /opt/sdk/sysroots/cortexa35-ostl-linux
 TA_DEV_KIT_DIR ?= /opt/sdk/sysroots/cortexa35-ostl-linux/usr/include/optee/export-user_ta_arm64
 
-.PHONY: all ta host clean deploy format lint check-dprint check-cargo
+.PHONY: all ta host clean deploy format lint check-dprint check-cargo copy-uuid
 
 all: ta host
 
@@ -57,7 +57,7 @@ ta: check-cargo
 
 # ── Build Host ─────────────────────────────────────────────────────────────────
 # Delegates to host/Makefile.
-host: check-cargo
+host: check-cargo copy-uuid
 	@$(MAKE) -C host \
 		LINKER_WRAPPER=$(LINKER_WRAPPER) \
 		TARGET=$(TARGET)
@@ -76,7 +76,7 @@ clean: check-cargo
 #   - TA binary copied to the board's TA store (e.g. /usr/lib/tee-datasync/)
 #
 # Usage: make deploy BOARD_ADDRESS=<board-address>
-deploy:
+deploy: host ta copy-uuid
 	@if [ -z "$(BOARD_ADDRESS)" ]; then \
 		echo "Usage: make deploy BOARD_ADDRESS=<board-address>"; \
 		exit 1; \
@@ -94,7 +94,7 @@ format: check-cargo check-dprint
 	@$(MAKE) -C ta format
 	@$(MAKE) -C host format
 
-lint: check-cargo check-dprint
+lint: check-cargo check-dprint copy-uuid
 	@$(MAKE) -C ta lint \
 		CROSS_COMPILE=$(CROSS_COMPILE) \
 		TA_SIGN_KEY=$(TA_SIGN_KEY) \
@@ -108,6 +108,8 @@ lint: check-cargo check-dprint
 		TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
 		TARGET=$(TARGET)
 
+copy-uuid:
+	@cp ta/uuid.txt host/uuid.txt || exit 1
 
 check-dprint:
 	@command -v dprint >/dev/null 2>&1 || (echo "dprint is not installed." && exit 1)

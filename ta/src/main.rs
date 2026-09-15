@@ -1,8 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![no_main]
 
-use optee_utee::prelude::*;
-use optee_utee::{ErrorKind, Result};
+use optee_utee::{prelude::*, ErrorKind, Result};
 
 // Command IDs — these must match the values used by the host application.
 // The optee-utee-build crate does not auto-generate command constants.
@@ -21,7 +20,7 @@ fn ta_destroy() {
 }
 
 #[ta_open_session]
-fn ta_open_session(_params: &mut ParametersNone) -> Result<()> {
+fn ta_open_session(_: &mut ParametersNone) -> Result<()> {
     trace_println!("Session opened");
     Ok(())
 }

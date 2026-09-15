@@ -11,5 +11,6 @@ optee_examples/
 Cargo.lock
 crates/trustzone-sdk
 
-# TA build artifacts
+# TA and host build artifacts
 ta/dyn_list
+host/uuid.txt
