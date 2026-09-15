@@ -1,0 +1,27 @@
+[package]
+name = "hello_world_ta"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[package.metadata.optee.ta]
+uuid-path = "uuid.txt"
+
+[workspace]
+
+[dependencies]
+optee-utee = { path = "../crates/trustzone-sdk/crates/optee-utee" }
+
+[build-dependencies]
+optee-utee-build = { path = "../crates/trustzone-sdk/crates/optee-utee-build" }
+
+# The `std` feature enables std-mode builds (requires nightly + `-Z build-std`).
+# Without it, the crate compiles with `no_std` for TA execution in the TEE.
+[features]
+default = []
+std = []
+
+[profile.release]
+panic = "abort"
+lto = true
+opt-level = 1

@@ -1,0 +1,13 @@
+[package]
+name = "hello_world_host"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+optee-teec = { path = "../crates/trustzone-sdk/crates/optee-teec" }
+optee-teec-build = { path = "../crates/trustzone-sdk/crates/optee-teec-build" }
+optee-teec-sys = { path = "../crates/trustzone-sdk/crates/optee-teec-sys" }
+
+[profile.release]
+opt-level = 1

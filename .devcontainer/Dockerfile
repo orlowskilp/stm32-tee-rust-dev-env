@@ -33,6 +33,7 @@ RUN pacman -Suy --disable-sandbox --noconfirm \
     diffutils \
     bash-completion \
     python \
+    aws-cli \
     github-cli \
     jq \
     bun \
@@ -55,12 +56,11 @@ RUN mkdir -p ${SDK_INSTALL_DIR} && \
 USER ${USERNAME}
 WORKDIR ${HOME_DIR}
 
-ENV PATH="${HOME_DIR}/.local/bin:${PATH}" \
+# Set up environment variables for the OP-TEE SDK
+ENV PATH="${PATH}:${HOME_DIR}/.local/bin" \
     LANG="en_US.UTF-8" \
     LC_ALL="en_US.UTF-8"
-
 COPY ${SDK_TARBALL_PATH}/${SDK_TARBALL_FILE} ${HOME_DIR}/${SDK_TARBALL_FILE}
-
 RUN tar -xzf ${HOME_DIR}/${SDK_TARBALL_FILE} -C ${HOME_DIR} && \
     ${HOME_DIR}/${SDK_TARBALL_NAME}/sdk/*.sh -y -d ${SDK_INSTALL_DIR} && \
     rm -r ${HOME_DIR}/${SDK_TARBALL_FILE} ${HOME_DIR}/${SDK_TARBALL_NAME}
@@ -68,6 +68,18 @@ RUN tar -xzf ${HOME_DIR}/${SDK_TARBALL_FILE} -C ${HOME_DIR} && \
 # Install direnv
 RUN echo eval '"$(direnv hook bash)"' >> ${HOME_DIR}/.bashrc
 RUN mkdir -p ${HOME_DIR}/.local/bin
+
+# Set environment variables for the devconctainer environment here
+ENV PATH="${PATH}:${HOME_DIR}/.cargo/bin" \
+    CARGO_TERM_COLOR="always"
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh -s -- -y && \
+    cargo install \
+        cargo-llvm-cov && \
+    rustup component add \
+        rust-analysis \
+        rust-analyzer
 
 # Install starship
 RUN curl -sS https://starship.rs/install.sh | sh -s -- --yes && \

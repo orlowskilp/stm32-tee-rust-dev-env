@@ -1,3 +1,16 @@
 *.tar.gz
 **/.env*
 optee_examples/
+!.envrc.example
+.aws
+
+# Rust build artifacts
+**/target/
+**/*.rs.bk
+**/*.rs.bak
+Cargo.lock
+crates/trustzone-sdk
+
+# TA and host build artifacts
+ta/dyn_list
+host/uuid.txt

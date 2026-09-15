@@ -46,8 +46,3 @@ echo -e "\nalias claude='claude --model qwen3.6 --channels plugin:telegram@claud
 
 # Allow direnv to load environment variables every time a new shell is started
 echo -e "\ndirenv allow ${CONTAINER_WORKSPACE_FOLDER}" >> ~/.bashrc
-
-# Clone the optee_examples repository from GitHub
-if [ ! -d optee_examples ]; then
-    git clone https://github.com/linaro-swg/optee_examples.git
-fi
