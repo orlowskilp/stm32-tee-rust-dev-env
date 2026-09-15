@@ -24,20 +24,27 @@
     // Set the default linker for cross-compilation targets
     "CC_X86_64_UNKNOWN_LINUX_GNU": "gcc",
     "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER": "gcc",
-    "CC_X86_64_UNKNOWN_LINUX_MUSL": "musl-gcc",
-    "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER": "gcc",
     "CC_AARCH64_UNKNOWN_LINUX_GNU": "aarch64-linux-gnu-gcc",
     "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER": "aarch64-linux-gnu-gcc",
-    "CC_AARCH64_UNKNOWN_LINUX_MUSL": "aarch64-linux-musl-gcc",
+    "CC_AARCH64_UNKNOWN_LINUX_MUSL": "musl-gcc",
     "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER": "aarch64-linux-musl-gcc",
     "CARGO_TERM_COLOR": "always",
     "CARGO_INCREMENTAL": "1",
+    "OPTEE_CLIENT_EXPORT": "/opt/sdk/sysroots/cortexa35-ostl-linux",
+    "CROSS_COMPILE": "aarch64-ostl-linux-",
     "TA_DEV_KIT_DIR": "/opt/sdk/sysroots/cortexa35-ostl-linux/usr/include/optee/export-user_ta_arm64",
     "COLORTERM": "truecolor"
   },
   "customizations": {
     "vscode": {
       "settings": {
+        "rust-analyzer.cargo.buildScripts.env": {
+          "OPTEE_CLIENT_EXPORT": "/opt/sdk/sysroots/cortexa35-ostl-linux",
+          "CROSS_COMPILE": "aarch64-ostl-linux-",
+          "TA_DEV_KIT_DIR": "/opt/sdk/sysroots/cortexa35-ostl-linux/usr/include/optee/export-user_ta_arm64",
+          "CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG": "false"
+        },
+        "rust-analyzer.cargo.loadOutDirsFromCheck": true,
         "rust-client.rustupPath": "/home/vscode/.cargo/bin/rustup"
       },
       "extensions": [
