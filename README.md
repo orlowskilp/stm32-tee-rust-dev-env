@@ -7,11 +7,14 @@ A Rust-based Trusted Application and host application for the STM32MP2 platform,
 The full build, deploy, and run workflow is documented in [QUICKSTART.md](QUICKSTART.md). The essential steps are:
 
 ```bash
+# Bootstrap environment from the example file (not tracked in git).
+cp .envrc.example .envrc
+
 # Source the SDK environment
 source .envrc
 
 # Clone the TrustZone SDK
-cd crates && git clone https://github.com/apache/teaclave-trustzone-sdk.git trustzone-sdk && cd ..
+cd crates && git clone https://github.com/apache/teaclave-trustzone-sdk.git trustzone-sdk && cd trustzone-sdk && git checkout tags/v4.10.0 -b v4.10.0 && cd ../..
 
 # Build both components
 make ta host
@@ -88,7 +91,7 @@ Each subdirectory (`ta/` and `host/`) manages its own build output independently
 | `target/<target>/release/hello_world_host` | **Final host binary** — deployed to the board. A cross-compiled ARM64 ELF linking against `libteec.so`. |
 | `target/<target>/release/`                 | Directory containing all host build artifacts. Git-ignored.                                             |
 
-The root Makefile delegates all build, format, and lint targets to the sub-Makefiles. Sub-Makefiles can be invoked standalone (e.g. `make -C ta ta`) — they each define a `TARGET ?=` fallback so the parent's variables are optional.
+The root Makefile delegates all build, format, and lint targets to the sub-Makefiles. Standalone invocation (e.g. `make -C ta ta`) requires `LINKER_WRAPPER`, `CROSS_COMPILE`, and `OPTEE_CLIENT_EXPORT` to be set, or `ta/Makefile` defaults must be configured for `TA_SIGN_KEY` and `TA_SIGN_SCRIPT`.
 
 A linker wrapper (`cargo-linker-wrapper.sh`) injects `--sysroot` into every linker invocation, allowing Cargo to locate C runtime startup files (`Scrt1.o`, `crti.o`, etc.) inside the Yocto sysroot during cross-linking.
 
@@ -120,6 +123,11 @@ This section describes the full workflow from setup to deployment.
 Source the SDK environment, which configures all cross-compilation variables:
 
 ```bash
+# Bootstrap environment from the example file (not tracked in git).
+cp .envrc.example .envrc
+```
+
+```bash
 source .envrc
 ```
 
@@ -136,12 +144,8 @@ The devcontainer assumes the SDK tarball (e.g. `SDK-x86_64-stm32mp2-openstlinux-
 Pull the Apache Teaclave TrustZone SDK, which provides the Rust bindings for OP-TEE:
 
 ```bash
-cd crates
-git clone https://github.com/apache/teaclave-trustzone-sdk.git trustzone-sdk
-cd ..
+cd crates && git clone https://github.com/apache/teaclave-trustzone-sdk.git trustzone-sdk && cd trustzone-sdk && git checkout tags/v4.10.0 -b v4.10.0 && cd ../..
 ```
-
-> **Note:** The SDK crates are pinned to OP-TEE 4.10.0. Verify that your STM32MP2 SDK ships the matching OP-TEE version.
 
 ### 4. Build
 

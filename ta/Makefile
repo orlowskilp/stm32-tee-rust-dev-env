@@ -35,10 +35,8 @@ ta:
 			--out target/$(TARGET)/release/$(UUID).ta; \
 		echo "=== TA signed: target/$(TARGET)/release/$(UUID).ta ==="; \
 	else \
-		cp target/$(TARGET)/release/stripped_ta \
-			target/$(TARGET)/release/$(UUID).ta; \
-		echo "=== WARNING: TA signed (unsigned) ==="; \
-		echo "Set TA_SIGN_KEY and TA_SIGN_SCRIPT to produce a signed TA."; \
+		echo "=== ERROR: Cannot build signed TA — set TA_SIGN_KEY and TA_SIGN_SCRIPT ===" >&2; \
+		exit 1; \
 	fi
 
 clean:

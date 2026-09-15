@@ -9,6 +9,9 @@ Get a Rust TA + host app building and running on your STM32MP2 board in five ste
 - Rust toolchain installed (`rustup` available on `PATH`).
 
 ```bash
+# Bootstrap environment from the example file (not tracked in git).
+cp .envrc.example .envrc
+
 # Source the SDK environment so cross-compilation variables are set.
 source .envrc
 ```
@@ -18,13 +21,12 @@ This sets `CROSS_COMPILE`, `TA_DEV_KIT_DIR`, `OPTEE_CLIENT_EXPORT`, `BOARD_ADDRE
 ## Step 1 — Clone the TrustZone SDK
 
 ```bash
-cd crates
-git clone https://github.com/apache/teaclave-trustzone-sdk.git trustzone-sdk
+cd crates && git clone https://github.com/apache/teaclave-trustzone-sdk.git trustzone-sdk && cd trustzone-sdk && git checkout -b v4.10.0 tags/v4.10.0 && cd ../..
 ```
 
 This pulls the Apache Teaclave TrustZone SDK, which provides the Rust bindings for OP-TEE (`optee-utee` for TAs, `optee-teec` for host apps).
 
-> **Note:** The SDK crates are pinned to OP-TEE 4.10.0. Verify that your STM32MP2 SDK ships the matching OP-TEE version.
+> **Note:** Verify that your STM32MP2 SDK ships the matching OP-TEE version.
 
 ## Step 2 — Build
 

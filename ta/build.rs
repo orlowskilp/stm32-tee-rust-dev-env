@@ -43,6 +43,6 @@ fn main() {
     let dyn_list_src = Path::new(&out_dir).join("dyn_list");
     let dyn_list_dst = Path::new(env!("CARGO_MANIFEST_DIR")).join("dyn_list");
     if dyn_list_src.is_file() {
-        fs::copy(&dyn_list_src, &dyn_list_dst).ok();
+        fs::copy(&dyn_list_src, &dyn_list_dst).expect("failed to copy dyn_list to TA crate root");
     }
 }

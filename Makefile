@@ -60,6 +60,8 @@ ta: check-cargo
 host: check-cargo copy-uuid
 	@$(MAKE) -C host \
 		LINKER_WRAPPER=$(LINKER_WRAPPER) \
+		CROSS_COMPILE=$(CROSS_COMPILE) \
+		OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
 		TARGET=$(TARGET)
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
@@ -86,7 +88,7 @@ deploy: host ta copy-uuid
 	@echo "=== Deploying host app ==="
 	@scp host/target/$(TARGET)/release/hello_world_host root@$(BOARD_ADDRESS):/root/
 	@echo "=== Deployed. Run on board:"
-	@echo "  ssh $(shell whoami)@$(BOARD_ADDRESS) ./hello_world_host"
+	@echo "  ssh root@$(BOARD_ADDRESS) ./hello_world_host"
 
 # ── Format ────────────────────────────────────────────────────────────────────
 format: check-cargo check-dprint

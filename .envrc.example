@@ -9,7 +9,7 @@ export OPTEE_CLIENT_EXPORT=/opt/sdk/sysroots/cortexa35-ostl-linux
 
 # TA signing — default test keys shipped by the SDK (for development only).
 # See the "Signing Keys" section in QUICKSTART.md for board-specific keys.
-export TA_SIGN_KEY_DEFAULT_KEYS="${TA_DEV_KIT_DIR}/keys/default_ta.pem"
+export TA_SIGN_KEY="${TA_DEV_KIT_DIR}/keys/default_ta.pem"
 
 # OP-TEE signing script location
 export TA_SIGN_SCRIPT="${TA_DEV_KIT_DIR}/scripts/sign_encrypt.py"
