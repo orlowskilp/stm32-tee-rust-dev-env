@@ -57,6 +57,7 @@ init: check-uuid
 # Delegates to ta/Makefile with required variables.
 ta: check-cargo
 	@$(MAKE) -C ta \
+		UUID=$$(cat ta/uuid.txt) \
 		CROSS_COMPILE=$(CROSS_COMPILE) \
 		TA_SIGN_KEY=$(TA_SIGN_KEY) \
 		TA_SIGN_SCRIPT=$(TA_SIGN_SCRIPT) \
@@ -66,12 +67,13 @@ ta: check-cargo
 # Delegates to host/Makefile.
 host: check-cargo copy-uuid
 	@$(MAKE) -C host \
+		UUID=$$(cat ta/uuid.txt) \
 		CROSS_COMPILE=$(CROSS_COMPILE) \
 		OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
 		TARGET=$(TARGET)
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
-clean: check-cargo
+clean:
 	@$(MAKE) -C ta clean
 	@$(MAKE) -C host clean
 
@@ -85,16 +87,27 @@ clean: check-cargo
 #
 # Usage: make deploy BOARD_ADDRESS=<board-address>
 deploy:
+	@if ! ls ta/target/$(TARGET)/release/*.ta >/dev/null 2>&1; then \
+		echo "ERROR: No TA binaries found. Run 'make ta' first."; \
+		exit 1; \
+	fi
+	@if [ ! -f host/target/$(TARGET)/release/$(HOST_APP) ]; then \
+		echo "ERROR: Host app binary not found. Run 'make host' first."; \
+		exit 1; \
+	fi
 	@if [ -z "$(BOARD_ADDRESS)" ]; then \
 		echo "Usage: make deploy BOARD_ADDRESS=<board-address>"; \
 		exit 1; \
 	fi
-	@echo -e "=== Deploying TA ===\n"
-	@scp ta/target/$(TARGET)/release/$(shell cat ta/uuid.txt).ta $(USER)@$(BOARD_ADDRESS):~ 2> /dev/null
-	@echo -e "=== Deploying host app ===\n"
-	@scp host/target/$(TARGET)/release/$(HOST_APP) $(USER)@$(BOARD_ADDRESS):~ 2> /dev/null
+	@echo -e "=== Deploying artifacts to the board ($(BOARD_ADDRESS)) ===\n"
+	scp ta/target/$(TARGET)/release/$$(cat ta/uuid.txt).ta host/target/$(TARGET)/release/$(HOST_APP) $(USER)@$(BOARD_ADDRESS):~
 	@echo -e "=== Deployed. Run on board:\n"
-	@ssh $(USER)@$(BOARD_ADDRESS) "sudo mv ~/$(shell cat ta/uuid.txt).ta /lib/optee_armtz/; sudo ./$(HOST_APP)" 2> /dev/null
+	ssh $(USER)@$(BOARD_ADDRESS) "sudo mv ~/$$(cat ta/uuid.txt).ta /lib/optee_armtz/; sudo ./$(HOST_APP)"
+	@echo -e "=== Verifying deployment ===\n"
+	@if ! ssh $(USER)@$(BOARD_ADDRESS) "test -f /lib/optee_armtz/$$(cat ta/uuid.txt).ta && test -f ~/$(HOST_APP)"; then \
+		echo "ERROR: Deployment verification failed on board."; \
+		exit 1; \
+	fi
 
 # ── Format ────────────────────────────────────────────────────────────────────
 format: check-cargo check-dprint
@@ -104,6 +117,7 @@ format: check-cargo check-dprint
 
 lint: check-cargo check-dprint copy-uuid
 	@$(MAKE) -C ta lint \
+		UUID=$$(cat ta/uuid.txt) \
 		CROSS_COMPILE=$(CROSS_COMPILE) \
 		TA_SIGN_KEY=$(TA_SIGN_KEY) \
 		TA_SIGN_SCRIPT=$(TA_SIGN_SCRIPT) \
@@ -111,6 +125,7 @@ lint: check-cargo check-dprint copy-uuid
 	@$(MAKE) -C host lint \
 		CROSS_COMPILE=$(CROSS_COMPILE) \
 		OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
+		UUID=$$(cat ta/uuid.txt) \
 		TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
 		TARGET=$(TARGET)
 
