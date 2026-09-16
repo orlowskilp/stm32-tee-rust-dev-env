@@ -1,7 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![no_main]
 
-use optee_utee::{prelude::*, ErrorKind, Result};
+use optee_utee::{
+    ta_close_session, ta_create, ta_destroy, ta_invoke_command, ta_open_session, trace_println,
+    ErrorKind, Parameters, Result,
+};
 
 // Command IDs — these must match the values used by the host application.
 // The optee-utee-build crate does not auto-generate command constants.
@@ -20,7 +23,7 @@ fn ta_destroy() {
 }
 
 #[ta_open_session]
-fn ta_open_session(_: &mut ParametersNone) -> Result<()> {
+fn ta_open_session(_: &mut Parameters) -> Result<()> {
     trace_println!("Session opened");
     Ok(())
 }
@@ -30,29 +33,27 @@ fn ta_close_session() {
     trace_println!("Session closed");
 }
 
+/// Dispatches TA commands received from the normal world.
+///
+/// Expects a single `ValueInout` parameter (arg 0) carrying a `u32` value.
+/// - `TA_CMD_INC_VALUE`: increments the value by 1 and echoes it back.
+/// - `TA_CMD_DEC_VALUE`: decrements the value by 1 and echoes it back.
+/// Returns `BadParameters` if the argument type is not a value parameter or
+/// if arithmetic would overflow/underflow.
 #[ta_invoke_command]
-fn ta_invoke_command(
-    cmd_id: u32,
-    params: &mut (
-        ParameterValueInout,
-        ParameterNone,
-        ParameterNone,
-        ParameterNone,
-    ),
-) -> Result<()> {
-    let values = &mut params.0;
+fn ta_invoke_command(cmd_id: u32, params: &mut Parameters) -> Result<()> {
     trace_println!("Command invoked: {}", cmd_id);
+    // SAFETY: params provided in the host application; verify host app code.
+    let mut value = unsafe { params.0.as_value() }?;
     match cmd_id {
         TA_CMD_INC_VALUE => {
-            trace_println!("Got value: {} from normal world", values.get_a());
-            values.set_a(values.get_a() + 1);
-            trace_println!("Echoed (incremented) value to: {}", values.get_a());
+            value.set_a(value.a().checked_add(1).ok_or(ErrorKind::BadParameters)?);
+            trace_println!("Incremented value: {}", value.a());
             Ok(())
         }
         TA_CMD_DEC_VALUE => {
-            trace_println!("Got value: {} from normal world", values.get_a());
-            values.set_a(values.get_a() - 1);
-            trace_println!("Decreased value to: {}", values.get_a());
+            value.set_a(value.a().checked_sub(1).ok_or(ErrorKind::BadParameters)?);
+            trace_println!("Decremented value: {}", value.a());
             Ok(())
         }
         _ => Err(ErrorKind::BadParameters.into()),

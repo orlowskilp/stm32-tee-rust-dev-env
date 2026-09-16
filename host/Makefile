@@ -15,8 +15,7 @@ TARGET ?= aarch64-unknown-linux-gnu
 host:
 	@cargo build \
 		--target $(TARGET) \
-		--release \
-		--config "target.$(TARGET).linker=\"$(LINKER_WRAPPER)\""
+		--release
 
 clean:
 	@cargo clean

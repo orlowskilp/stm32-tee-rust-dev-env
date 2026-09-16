@@ -1,5 +1,5 @@
 [package]
-name = "hello_world_ta"
+name = "hello-world-ta"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -10,10 +10,11 @@ uuid-path = "uuid.txt"
 [workspace]
 
 [dependencies]
-optee-utee = { path = "../crates/trustzone-sdk/crates/optee-utee" }
+optee-utee = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-utee", tag = "v0.9.0" }
+optee-utee-sys = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-utee-sys", tag = "v0.9.0" }
 
 [build-dependencies]
-optee-utee-build = { path = "../crates/trustzone-sdk/crates/optee-utee-build" }
+optee-utee-build = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-utee-build", tag = "v0.9.0" }
 
 # The `std` feature enables std-mode builds (requires nightly + `-Z build-std`).
 # Without it, the crate compiles with `no_std` for TA execution in the TEE.

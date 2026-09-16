@@ -1,13 +1,13 @@
 [package]
-name = "hello_world_host"
+name = "hello-world-host"
 version = "0.1.0"
 edition = "2021"
 publish = false
 
 [dependencies]
-optee-teec = { path = "../crates/trustzone-sdk/crates/optee-teec" }
-optee-teec-build = { path = "../crates/trustzone-sdk/crates/optee-teec-build" }
-optee-teec-sys = { path = "../crates/trustzone-sdk/crates/optee-teec-sys" }
+optee-teec = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-teec", tag = "v0.9.0" }
+optee-teec-build = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-teec-build", tag = "v0.9.0" }
+optee-teec-sys = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-teec-sys", tag = "v0.9.0" }
 
 [profile.release]
 opt-level = 1

@@ -6,6 +6,7 @@
       "USERNAME": "vscode",
       "SDK_TARBALL_NAME": "stm32mp2-openstlinux-6.6-yocto-scarthgap-mpu-v26.06.10",
       "SDK_TARBALL_FILE": "SDK-x86_64-stm32mp2-openstlinux-6.6-yocto-scarthgap-mpu-v26.06.10.tar.gz",
+      "SDK_RUST_ADDON_FILE": "SDK-x86_64-stm32mp2-openstlinux-6.6-v26.06.10-addon-rust.tar.gz",
       "SDK_TARBALL_PATH": ".."
     },
     "options": [

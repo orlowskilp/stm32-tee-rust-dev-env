@@ -25,10 +25,6 @@ TA_SIGN_SCRIPT ?= $(TA_DEV_KIT_DIR)/scripts/sign_encrypt.py
 # Override with -e to use a different path.
 OPTEE_CLIENT_EXPORT ?= /opt/sdk/sysroots/cortexa35-ostl-linux
 
-# ── Linker Wrapper ────────────────────────────────────────────────────────────
-# Path to the cargo linker wrapper script that injects --sysroot.
-LINKER_WRAPPER := $(abspath cargo-linker-wrapper.sh)
-
 # ── Build Target ───────────────────────────────────────────────────────────────
 # Cross-compilation target for STM32MP2. Override with -e or env var to target
 # a different platform.
@@ -41,9 +37,21 @@ CROSS_COMPILE ?= aarch64-ostl-linux-
 OECORE_TARGET_SYSROOT ?= /opt/sdk/sysroots/cortexa35-ostl-linux
 TA_DEV_KIT_DIR ?= /opt/sdk/sysroots/cortexa35-ostl-linux/usr/include/optee/export-user_ta_arm64
 
-.PHONY: all ta host clean deploy format lint check-dprint check-cargo copy-uuid
+# ── User ─────────────────────────────────────────────────────────────────────
+# The user running the make commands. Defaults to the current system user.
+USER ?= $(shell whoami)
+
+# ── Host application ───────────────────────────────────────────────────────────
+# Name of the host application binary. Can be overridden with -e or env var.
+HOST_APP ?= hello-world-host
+
+.PHONY: all ta init host clean deploy format lint check-dprint check-cargo copy-uuid
 
 all: ta host
+
+init: check-uuid
+	@echo "Initializing TA UUID..."
+	@uuidgen > ta/uuid.txt
 
 # ── Build TA ───────────────────────────────────────────────────────────────────
 # Delegates to ta/Makefile with required variables.
@@ -52,14 +60,12 @@ ta: check-cargo
 		CROSS_COMPILE=$(CROSS_COMPILE) \
 		TA_SIGN_KEY=$(TA_SIGN_KEY) \
 		TA_SIGN_SCRIPT=$(TA_SIGN_SCRIPT) \
-		LINKER_WRAPPER=$(LINKER_WRAPPER) \
 		TARGET=$(TARGET)
 
 # ── Build Host ─────────────────────────────────────────────────────────────────
 # Delegates to host/Makefile.
 host: check-cargo copy-uuid
 	@$(MAKE) -C host \
-		LINKER_WRAPPER=$(LINKER_WRAPPER) \
 		CROSS_COMPILE=$(CROSS_COMPILE) \
 		OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
 		TARGET=$(TARGET)
@@ -78,17 +84,17 @@ clean: check-cargo
 #   - TA binary copied to the board's TA store (e.g. /usr/lib/tee-datasync/)
 #
 # Usage: make deploy BOARD_ADDRESS=<board-address>
-deploy: host ta copy-uuid
+deploy:
 	@if [ -z "$(BOARD_ADDRESS)" ]; then \
 		echo "Usage: make deploy BOARD_ADDRESS=<board-address>"; \
 		exit 1; \
 	fi
-	@echo "=== Deploying TA ==="
-	@scp ta/target/$(TARGET)/release/$(shell cat ta/uuid.txt).ta root@$(BOARD_ADDRESS):/usr/lib/tee-datasync/
-	@echo "=== Deploying host app ==="
-	@scp host/target/$(TARGET)/release/hello_world_host root@$(BOARD_ADDRESS):/root/
-	@echo "=== Deployed. Run on board:"
-	@echo "  ssh root@$(BOARD_ADDRESS) ./hello_world_host"
+	@echo -e "=== Deploying TA ===\n"
+	@scp ta/target/$(TARGET)/release/$(shell cat ta/uuid.txt).ta $(USER)@$(BOARD_ADDRESS):~ 2> /dev/null
+	@echo -e "=== Deploying host app ===\n"
+	@scp host/target/$(TARGET)/release/$(HOST_APP) $(USER)@$(BOARD_ADDRESS):~ 2> /dev/null
+	@echo -e "=== Deployed. Run on board:\n"
+	@ssh $(USER)@$(BOARD_ADDRESS) "sudo mv ~/$(shell cat ta/uuid.txt).ta /lib/optee_armtz/; sudo ./$(HOST_APP)" 2> /dev/null
 
 # ── Format ────────────────────────────────────────────────────────────────────
 format: check-cargo check-dprint
@@ -101,10 +107,8 @@ lint: check-cargo check-dprint copy-uuid
 		CROSS_COMPILE=$(CROSS_COMPILE) \
 		TA_SIGN_KEY=$(TA_SIGN_KEY) \
 		TA_SIGN_SCRIPT=$(TA_SIGN_SCRIPT) \
-		LINKER_WRAPPER=$(LINKER_WRAPPER) \
 		TARGET=$(TARGET)
 	@$(MAKE) -C host lint \
-		LINKER_WRAPPER=$(LINKER_WRAPPER) \
 		CROSS_COMPILE=$(CROSS_COMPILE) \
 		OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
 		TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
@@ -118,3 +122,6 @@ check-dprint:
 
 check-cargo:
 	@command -v cargo >/dev/null 2>&1 || (echo "cargo is not installed." && exit 1)
+
+check-uuid:
+	@command -v uuidgen >/dev/null 2>&1 || (echo "uuidgen is not installed." && exit 1)

@@ -13,6 +13,9 @@ UUID := $(shell cat uuid.txt)
 # ── Build Target ──────────────────────────────────────────────────────────────
 TARGET ?= aarch64-unknown-linux-gnu
 
+# ── Package Name ──────────────────────────────────────────────────────────────
+PKG_NAME := hello-world-ta
+
 .PHONY: all ta clean format lint
 
 all: ta
@@ -24,10 +27,9 @@ ta:
 		RUSTC_LINKER=ld \
 		cargo build \
 			--target $(TARGET) \
-			--release \
-			--config "target.$(TARGET).linker=\"$(LINKER_WRAPPER)\""
+			--release
 	@$(CROSS_COMPILE)objcopy --strip-unneeded \
-		target/$(TARGET)/release/hello_world_ta \
+		target/$(TARGET)/release/$(PKG_NAME) \
 		target/$(TARGET)/release/stripped_ta
 	@if [ -n "$(TA_SIGN_KEY)" ] && [ -n "$(TA_SIGN_SCRIPT)" ]; then \
 		python3 $(TA_SIGN_SCRIPT) --uuid $(UUID) --key $(TA_SIGN_KEY) \
