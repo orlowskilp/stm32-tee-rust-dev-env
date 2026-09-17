@@ -62,7 +62,9 @@
         "Codecov.codecov",
         "ms-vscode.cpptools",
         "ms-vscode.cpptools-extension-pack",
-        "ms-vscode.cpp-devtools"
+        "ms-vscode.cpp-devtools",
+        "docker.docker",
+        "ms-azuretools.vscode-docker"
       ]
     }
   },
@@ -83,8 +85,6 @@
   ],
   "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
-    // Remove once migration is complete.
-    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind",
     "source=${localEnv:HOME}/.local/share/opencode,target=/home/vscode/.local/share/opencode,type=bind",
     "source=${localEnv:HOME}/.config/opencode,target=/home/vscode/.config/opencode,type=bind",
     "source=${localEnv:HOME}/.opencode-mem,target=/home/vscode/.opencode-mem,type=bind",

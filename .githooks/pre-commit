@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+# SPDX-License-Identifier: MIT
+
+set -euo pipefail
+
+source "$(dirname "$0")/lib/run-in-devcontainer.sh"
+
+PRECOMMIT="${GREEN}[pre-commit]${NC}"
+
+# Run Rust quality checks when staged changes touch Rust-relevant files.
+# For `git commit --amend` with no staged changes, fall back to files in HEAD
+# so message-only amend operations still enforce quality for Rust commits.
+staged_rust_changes="$(git diff --cached --name-only -- '*.rs' 'Cargo.toml' 'Cargo.lock' 'rust-toolchain.toml' 'rustfmt.toml' || true)"
+if [[ -z "${staged_rust_changes}" ]]; then
+  head_rust_changes="$(git diff-tree --no-commit-id --name-only -r HEAD -- '*.rs' 'Cargo.toml' 'Cargo.lock' 'rust-toolchain.toml' 'rustfmt.toml' 2>/dev/null || true)"
+  if [[ -z "${head_rust_changes}" ]]; then
+    exit 0
+  fi
+  echo -e "${PRECOMMIT} no staged Rust changes; enforcing checks for amend based on HEAD files..."
+else
+  echo -e "${PRECOMMIT} Rust-relevant staged changes detected; enforcing checks..."
+fi
+
+echo -e "${PRECOMMIT} running make lint..."
+if ! run_in_devcontainer "make lint"; then
+  echo -e "${PRECOMMIT} ${RED}lint failed${NC}. Run make format && make lint, then commit again." >&2
+  exit 1
+fi
+
+echo -e "${PRECOMMIT} lint passed."

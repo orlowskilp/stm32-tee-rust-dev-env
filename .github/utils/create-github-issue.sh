@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 set -euo pipefail
 
-DEFAULT_SECRET_ARN="arn:aws:secretsmanager:ap-southeast-1:487692780388:secret:dev/agents/pat-ynoK2Q"
 DEFAULT_ALLOWED_PREFIXES="bug,change,chore,feat"
 
 TITLE=""
@@ -9,7 +9,6 @@ BODY=""
 BODY_FILE=""
 REPO=""
 ISSUE_TYPE=""
-SECRET_ARN="$DEFAULT_SECRET_ARN"
 ALLOWED_PREFIXES="$DEFAULT_ALLOWED_PREFIXES"
 SKIP_PREFIX_CHECK=false
 
@@ -35,13 +34,13 @@ Optional:
   --label <name>                Label to add (repeatable)
   --assignee <login>            Assignee to add (repeatable; use @me for current user)
   --type <name>                 Issue type to set (e.g. Task), if supported by repo
-  --secret-arn <arn>            Secrets Manager ARN storing PAT
   --allowed-prefixes <csv>      Allowed title prefixes (default: bug,change,chore,feat)
   --skip-prefix-check           Disable title prefix validation
   -h, --help                    Show this help
 
 Environment:
-  GH_TOKEN                      Optional pre-set GitHub token. If missing, fetched from Secrets Manager.
+  SECRET_ARN                    AWS Secrets Manager ARN of the PAT secret (required).
+  GH_TOKEN                      Optional pre-set GitHub token. If missing, fetched from SECRET_ARN.
 
 Examples:
   create-github-issue.sh \
@@ -237,6 +236,8 @@ main() {
 
   require_cmd gh
   parse_args "$@"
+
+  : "${SECRET_ARN:?SECRET_ARN is required (set as environment variable)}"
 
   if [[ -z "$TITLE" ]]; then
     echo "Missing required argument: --title" >&2

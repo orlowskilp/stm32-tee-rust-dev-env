@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 
 is_sourced() {
   [[ "${BASH_SOURCE[0]}" != "$0" ]]
@@ -53,6 +54,7 @@ main() {
 
   : "${PAT_SECRET_ARN:?PAT_SECRET_ARN is required}"
   : "${PAT_ACCESS_POLICY_SHA:?PAT_ACCESS_POLICY_SHA is required}"
+  : "${AWS_USER_POLICY_NAME:?AWS_USER_POLICY_NAME is required}"
 
   user_arn="$(aws sts get-caller-identity --query Arn --output text)" \
     || panic "unable to resolve caller identity"
