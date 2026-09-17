@@ -1,12 +1,31 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![no_main]
 
-use optee_utee::{prelude::*, ErrorKind, Result};
+use optee_utee::{
+    ta_close_session, ta_create, ta_destroy, ta_invoke_command, ta_open_session, trace_println,
+    Error, ErrorKind, ParamType, Parameters, Result,
+};
 
 // Command IDs — these must match the values used by the host application.
-// The optee-utee-build crate does not auto-generate command constants.
-pub const TA_CMD_INC_VALUE: u32 = 0;
-pub const TA_CMD_DEC_VALUE: u32 = 1;
+enum Command {
+    IncValue = 0,
+    DecValue = 1,
+}
+
+impl TryFrom<u32> for Command {
+    type Error = Error;
+
+    fn try_from(value: u32) -> Result<Self> {
+        match value {
+            0 => Ok(Command::IncValue),
+            1 => Ok(Command::DecValue),
+            v => {
+                trace_println!("Invalid command ID: {}", v);
+                Err(ErrorKind::BadParameters.into())
+            }
+        }
+    }
+}
 
 #[ta_create]
 fn ta_create() -> Result<()> {
@@ -20,7 +39,7 @@ fn ta_destroy() {
 }
 
 #[ta_open_session]
-fn ta_open_session(_: &mut ParametersNone) -> Result<()> {
+fn ta_open_session(_: &mut Parameters) -> Result<()> {
     trace_println!("Session opened");
     Ok(())
 }
@@ -30,32 +49,43 @@ fn ta_close_session() {
     trace_println!("Session closed");
 }
 
+/// Dispatches TA commands received from the normal world.
+///
+/// Expects a single `ValueInout` parameter (arg 0) carrying a `u32` value.
+/// - `Command::IncValue`: increments the value by 1 and echoes it back.
+/// - `Command::DecValue`: decrements the value by 1 and echoes it back.
+/// Returns `BadParameters` if the argument type is not a value parameter or
+/// if arithmetic would overflow/underflow.
 #[ta_invoke_command]
-fn ta_invoke_command(
-    cmd_id: u32,
-    params: &mut (
-        ParameterValueInout,
-        ParameterNone,
-        ParameterNone,
-        ParameterNone,
-    ),
-) -> Result<()> {
-    let values = &mut params.0;
+fn ta_invoke_command(cmd_id: u32, params: &mut Parameters) -> Result<()> {
     trace_println!("Command invoked: {}", cmd_id);
-    match cmd_id {
-        TA_CMD_INC_VALUE => {
-            trace_println!("Got value: {} from normal world", values.get_a());
-            values.set_a(values.get_a() + 1);
-            trace_println!("Echoed (incremented) value to: {}", values.get_a());
-            Ok(())
-        }
-        TA_CMD_DEC_VALUE => {
-            trace_println!("Got value: {} from normal world", values.get_a());
-            values.set_a(values.get_a() - 1);
-            trace_println!("Decreased value to: {}", values.get_a());
-            Ok(())
-        }
-        _ => Err(ErrorKind::BadParameters.into()),
+
+    // Validate parameter direction — TA expects ValueInout only.
+    if !matches!(params.0.param_type, ParamType::ValueInout) {
+        return Err(ErrorKind::BadParameters.into());
+    }
+    // SAFETY: The OP-TEE entry-point wrapper constructs this parameter from its valid
+    // TEE_Param array; the type check above confirms that value was set in this slot.
+    let mut value = unsafe { params.0.as_value() }?;
+
+    let cmd = cmd_id.try_into()?;
+    match cmd {
+        Command::IncValue => value
+            .a()
+            .checked_add(1)
+            .map(|v| {
+                value.set_a(v);
+                trace_println!("Incremented value: {}", value.a());
+            })
+            .ok_or(ErrorKind::BadParameters.into()),
+        Command::DecValue => value
+            .a()
+            .checked_sub(1)
+            .map(|v| {
+                value.set_a(v);
+                trace_println!("Decremented value: {}", value.a());
+            })
+            .ok_or(ErrorKind::BadParameters.into()),
     }
 }
 

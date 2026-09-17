@@ -1,12 +1,15 @@
 # Quickstart
 
-Get a Rust TA + host app building and running on your STM32MP2 board in five steps.
+Get a Rust TA + host app building and running on your STM32MP2 board in four steps.
 
 ## Prerequisites
 
 - STM32MP2 board with OP-TEE OS running (you have already verified with the C `hello_world` example).
-- The Yocto SDK extracted to `/opt/sdk/`.
-- Rust toolchain installed (`rustup` available on `PATH`).
+- **Yocto SDK** — the STM32MP2 OpenSTLinux SDK (with optional Rust add-ons) containing the `aarch64-ostl-linux-` cross-compiler toolchain. The SDK tarballs (`SDK-x86_64-stm32mp2-openstlinux-6.6-yocto-scarthgap-mpu-*.tar.gz` and `SDK-x86_64-stm32mp2-openstlinux-6.6-v26.06.10-addon-rust.tar.gz`) are necessary and can be configured via the `SDK_TARBALL_FILE` and `SDK_RUST_ADDON_FILE` variables in `.devcontainer/devcontainer.json`. Download them from the [STM32MP2 Getting Started page](https://wiki.st.com/stm32mpu/wiki/Getting_started/STM32MP2_boards/STM32MP257x-DK/Develop_on_Arm_Cortex-A35/Install_the_SDK).
+- **Rust toolchain** installed (`rustup` available on `PATH`)
+- **`uuidgen`** installed — used by `make init` to generate a TA UUID
+
+All cross-compilation environment variables (`CROSS_COMPILE`, `TA_DEV_KIT_DIR`, `OPTEE_CLIENT_EXPORT`, `BOARD_ADDRESS`, and the sysroot paths) are set by sourcing `.envrc` — a file native to [direnv](https://direnv.net/), which the devcontainer uses to configure the workspace on every shell entry.
 
 ```bash
 # Bootstrap environment from the example file (not tracked in git).
@@ -16,19 +19,15 @@ cp .envrc.example .envrc
 source .envrc
 ```
 
-This sets `CROSS_COMPILE`, `TA_DEV_KIT_DIR`, `OPTEE_CLIENT_EXPORT`, `BOARD_ADDRESS`, and the sysroot paths.
+## Step 0 (optional) — Initialize
 
-## Step 1 — Clone the TrustZone SDK
+Generate a UUID for the TA and populate `ta/uuid.txt`:
 
 ```bash
-cd crates && git clone https://github.com/apache/teaclave-trustzone-sdk.git trustzone-sdk && cd trustzone-sdk && git checkout -b v4.10.0 tags/v4.10.0 && cd ../..
+make init
 ```
 
-This pulls the Apache Teaclave TrustZone SDK, which provides the Rust bindings for OP-TEE (`optee-utee` for TAs, `optee-teec` for host apps).
-
-> **Note:** Verify that your STM32MP2 SDK ships the matching OP-TEE version.
-
-## Step 2 — Build
+## Step 1 — Build
 
 ```bash
 # Build the Trusted Application (TA) — produces a signed .ta binary.
@@ -73,28 +72,26 @@ To use the default SDK key, run `make ta` without overrides — it is the Makefi
 RSA is the only supported signing algorithm for TAs. ECDSA is not supported by
 OP-TEE's TA signature mechanism.
 
-## Step 3 — Deploy
+## Step 2 — Deploy
 
 ```bash
 make deploy BOARD_ADDRESS=<your-board-address>
 ```
 
-This SCPs the signed TA binary to `/usr/lib/tee-datasync/` on the board and the host app to `/root/`.
-
-Alternatively, do it by hand:
+This SCPs the signed TA binary to the board's TA store (`/lib/optee_armtz/`), deploys the host app to `~`, and immediately runs it via `sudo`. To deploy without running, do it manually:
 
 ```bash
 # Deploy the TA
-scp ta/target/aarch64-unknown-linux-gnu/release/$(cat ta/uuid.txt).ta root@<your-board-address>:/usr/lib/tee-datasync/
+scp ta/target/aarch64-unknown-linux-gnu/release/$(cat ta/uuid.txt).ta root@<your-board-address>:/lib/optee_armtz/
 
 # Deploy the host app
-scp host/target/aarch64-unknown-linux-gnu/release/hello_world_host root@<your-board-address>:/root/
+scp host/target/aarch64-unknown-linux-gnu/release/hello-world-host root@<your-board-address>:/root/
 ```
 
-## Step 4 — Run
+## Step 3 — Run
 
 ```bash
-ssh root@<your-board-address> ./hello_world_host
+ssh root@<your-board-address> sudo ./hello-world-host
 ```
 
 Expected output:
@@ -119,23 +116,10 @@ dmesg | grep optee
 
 ```text
 .
-├── ta/                       # Trusted Application (runs in Secure World)
-│   ├── Makefile              # TA build: ta, clean (delegated from root)
-│   ├── Cargo.toml            # rustc target + optee-utee deps
-│   ├── build.rs              # TA header generation (optee-utee-build)
-│   ├── src/main.rs           # TA entry points: create, open_session, invoke_command, close_session, destroy
-│   └── uuid.txt              # TA UUID (128-bit)
-├── host/                     # Host application (runs in Normal World / Linux)
-│   ├── Makefile              # Host build: host, clean (delegated from root)
-│   ├── Cargo.toml            # optee-teec deps
-│   ├── build.rs              # Cross-compilation metadata
-│   └── src/main.rs           # Opens session, invokes commands, reads results
-├── crates/
-│   └── trustzone-sdk/        # Apache Teaclave SDK (cloned in Step 1)
-├── Makefile                  # Top-level build: delegates to ta/ and host/
-├── cargo-linker-wrapper.sh   # Injects --sysroot for cross-compilation
-├── rust-toolchain.toml       # Rust toolchain config (already present)
-└── .envrc                    # SDK environment setup (already present)
+├── ta/           # Trusted Application (runs in Secure World, nightly Rust)
+├── host/         # Host application (runs in Normal World, stable Rust)
+├── .devcontainer/ # Devcontainer config (Dockerfile, VS Code settings)
+└── .vscode/      # VS Code workspace settings
 ```
 
 ## Architecture
@@ -164,21 +148,22 @@ dmesg | grep optee
 
 ### Change the TA UUID
 
-Edit `ta/uuid.txt` and update the `TA_UUID` constant in `host/src/main.rs` to match. The UUID must be identical in both places.
+Edit `ta/uuid.txt`. The host's `build.rs` reads `uuid.txt` at build time and generates `read_uuid.rs` containing the `TA_UUID` constant, so no source file changes are needed in the host app — just rebuild.
 
 ### Add new commands
 
-In `ta/src/main.rs`, add a new constant to `TA_CMD_*` and a new arm to the `match` in `ta_invoke_command()`. In the host app, add the matching constant and call `session.invoke_command()` with the new command ID.
+In `ta/src/main.rs`, add a new variant to the `Command` enum and a new arm to the `match` in `ta_invoke_command()`. In the host app, add the matching enum variant and call `session.invoke_command()` with it.
 
 ### Use parameter types other than values
 
-The TA and host both use `ParameterValueInout` / `ParamValue` in this example. For shared memory transfers, use `ParamMemRef` types instead. The Teaclave SDK provides `ParamTmpRef`, `ParamMemRef`, and their variants in the `optee-teec` crate.
+The TA and host both use `ParamValue` with `ParamType::ValueInout` in this example. For shared memory transfers, use `ParamMemRef` types instead. The Teaclave SDK provides `ParamTmpRef`, `ParamMemRef`, and their variants in the `optee-teec` crate.
 
 ## Known Constraints
 
-- **OP-TEE version:** The Teaclave SDK crates target OP-TEE 4.10.0. Version mismatches between the SDK bindings and the OP-TEE runtime on your board will cause ABI issues.
-- **No-std:** The TA builds with `no_std` (stable Rust). The `std` feature (requires nightly) is available for advanced features like TLS inside a TA.
-- **Cross-compilation:** Everything is cross-compiled for `aarch64-unknown-linux-gnu`. Do not run `cargo build` without the target flag — it will target your host architecture instead.
+- **OP-TEE version:** The Teaclave SDK crates target OP-TEE 4.10.0 (via `v0.9.0` tag). Version mismatches between the SDK bindings and the OP-TEE runtime on your board will cause ABI issues.
+- **No-std:** The TA builds with `no_std` by default (requires nightly Rust via `ta/rust-toolchain.toml`). The `std` feature is available for advanced features like TLS inside a TA.
+- **Cross-compilation:** Both sub-projects have `[build] target` configured in `.cargo/config.toml` set to `aarch64-unknown-linux-gnu`, so `cargo build` from within the `ta/` or `host/` directory will automatically target ARM64.
+- **Per-subproject toolchain:** The TA uses nightly Rust (`ta/rust-toolchain.toml`) and the host uses stable (`host/rust-toolchain.toml`).
 
 ## Further Reading
 
