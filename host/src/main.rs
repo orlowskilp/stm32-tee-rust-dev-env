@@ -1,35 +1,36 @@
-use optee_teec::{Context, Operation, ParamNone, ParamType, ParamValue, Uuid};
+use optee_teec::{Context, Operation, ParamNone, ParamType, ParamValue, Result, Uuid};
 
 // TA_UUID is generated at build time from uuid.txt and included via read_uuid.rs.
 include!(concat!(env!("OUT_DIR"), "/read_uuid.rs"));
 
+const TEST_VALUE: u32 = 42;
+
 /// Command IDs — must match the values defined in the TA.
-const TA_CMD_INC_VALUE: u32 = 0;
-const TA_CMD_DEC_VALUE: u32 = 1;
+enum Command {
+    IncValue = 0,
+    DecValue = 1,
+}
 
-fn main() -> optee_teec::Result<()> {
-    // Initialize a context connecting us to the TEE.
-    let mut ctx = Context::new()?;
+impl From<Command> for u32 {
+    fn from(cmd: Command) -> Self {
+        cmd as u32
+    }
+}
 
-    // Parse the TA's UUID from a string.
-    let uuid = Uuid::parse_str(TA_UUID)?;
-
+fn main() -> Result<()> {
     // Open a session to the hello_world TA.
-    let mut session = ctx.open_session(uuid)?;
-
-    // Create an input value to send to the TA.
-    let p0 = ParamValue::new(42, 0, ParamType::ValueInout);
+    let mut session = Context::new()?.open_session(Uuid::parse_str(TA_UUID)?)?;
 
     // Build an operation with one value parameter + three unused slots.
-    let mut op1 = Operation::new(0, p0, ParamNone, ParamNone, ParamNone);
-
-    // Read the value before invoking the TA (just for debugging).
+    let mut op1 = Operation::new(
+        0,
+        ParamValue::new(TEST_VALUE, 0, ParamType::ValueInout),
+        ParamNone,
+        ParamNone,
+        ParamNone,
+    );
     println!("Sending value to TA: {}", op1.parameters().0.a());
-
-    // Invoke command 0 (increment/echo).
-    session.invoke_command(TA_CMD_INC_VALUE, &mut op1)?;
-
-    // Read the value back after the TA has processed it.
+    session.invoke_command(Command::IncValue.into(), &mut op1)?;
     let value = op1.parameters().0.a();
     println!("TA echoed (incremented) value to {}", value);
 
@@ -41,7 +42,7 @@ fn main() -> optee_teec::Result<()> {
         ParamNone,
         ParamNone,
     );
-    session.invoke_command(TA_CMD_DEC_VALUE, &mut op2)?;
+    session.invoke_command(Command::DecValue.into(), &mut op2)?;
     let value2 = op2.parameters().0.a();
     println!("TA decreased value back to {}", value2);
 

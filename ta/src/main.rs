@@ -7,9 +7,20 @@ use optee_utee::{
 };
 
 // Command IDs — these must match the values used by the host application.
-// The optee-utee-build crate does not auto-generate command constants.
-pub const TA_CMD_INC_VALUE: u32 = 0;
-pub const TA_CMD_DEC_VALUE: u32 = 1;
+enum Command {
+    IncValue = 0,
+    DecValue = 1,
+}
+
+impl From<u32> for Command {
+    fn from(value: u32) -> Self {
+        match value {
+            0 => Command::IncValue,
+            1 => Command::DecValue,
+            _ => panic!("Invalid command value"),
+        }
+    }
+}
 
 #[ta_create]
 fn ta_create() -> Result<()> {
@@ -45,18 +56,17 @@ fn ta_invoke_command(cmd_id: u32, params: &mut Parameters) -> Result<()> {
     trace_println!("Command invoked: {}", cmd_id);
     // SAFETY: params provided in the host application; verify host app code.
     let mut value = unsafe { params.0.as_value() }?;
-    match cmd_id {
-        TA_CMD_INC_VALUE => {
+    match cmd_id.into() {
+        Command::IncValue => {
             value.set_a(value.a().checked_add(1).ok_or(ErrorKind::BadParameters)?);
             trace_println!("Incremented value: {}", value.a());
             Ok(())
         }
-        TA_CMD_DEC_VALUE => {
+        Command::DecValue => {
             value.set_a(value.a().checked_sub(1).ok_or(ErrorKind::BadParameters)?);
             trace_println!("Decremented value: {}", value.a());
             Ok(())
         }
-        _ => Err(ErrorKind::BadParameters.into()),
     }
 }
 
