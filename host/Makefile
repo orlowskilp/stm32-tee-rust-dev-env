@@ -1,39 +1,44 @@
-# ── Host App Build ────────────────────────────────────────────────────────────
-# Build the host application for ARM64.
-#
-# Variables required from parent:
-#   CROSS_COMPILE - cross-compiler prefix (not used by host build; present for
-#                   consistency with the TA build and future-proofing).
-#   UUID          - TA UUID (passed from parent Makefile for consistency; not
-#                   used by the host build itself).
-#   TARGET        - cargo target triple (default: aarch64-unknown-linux-gnu)
-
-# ── Verbose Output ─────────────────────────────────────────────────────────────
-# V=1 enables verbose cargo output (e.g., make V=1).
+# Verbose cargo output when V=1 is passed (e.g., `make V=1`).
 CARGO_VERBOSE := $(if $(V),$(V),)
 
-.PHONY: all host clean format lint
-
-all: host
+# ── Host Application Name ─────────────────────────────────────────────────────
+# Extract the host application name from the Cargo package ID.
+HOST_APP := $(shell cargo pkgid | awk -F '#'  '{ print $$2 }' | awk -F '@' '{ print $$1 }')
 
 # ── Build Target ──────────────────────────────────────────────────────────────
+# Provided by the parent Makefile or environment, otherwise defaults are used.
 TARGET ?= aarch64-unknown-linux-gnu
 
-# Build the host application
-host:
-	@cargo build \
+.PHONY: all
+all: $(HOST_APP)
+
+# Build the host application binary and copy it to the Makefile directory.
+$(HOST_APP): check-uuid-file
+	cargo build \
 		--target $(TARGET) \
 		--release
+	cp target/$(TARGET)/release/$(HOST_APP) . || exit 1
 
+# Clean build artifacts.
+.PHONY: clean
 clean:
-	@cargo clean
+	cargo clean
+	rm -f $(HOST_APP)
 
-
+# Format Rust source code.
+.PHONY: format
 format:
-	@cargo fmt
+	cargo fmt
 
+# Lint Rust source code with clippy, cargo fmt, and dprint.
+.PHONY: lint
 lint:
-	@dprint check
-	@cargo $(CARGO_VERBOSE) check --all-targets --target $(TARGET)
-	@cargo fmt --check
-	@cargo $(CARGO_VERBOSE) clippy --all-targets --target $(TARGET) -- -D warnings
+	dprint check
+	cargo $(CARGO_VERBOSE) check --all-targets --target $(TARGET)
+	cargo fmt --check
+	cargo $(CARGO_VERBOSE) clippy --all-targets --target $(TARGET) -- -D warnings
+
+# 
+.PHONY: check-uuid-file
+check-uuid-file:
+	@test -f uuid.txt || (echo "UUID file not found." && exit 1)
