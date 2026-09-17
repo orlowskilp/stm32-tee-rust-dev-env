@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# SPDX-License-Identifier: MIT
 
-DEFAULT_SECRET_ARN="arn:aws:secretsmanager:ap-southeast-1:487692780388:secret:dev/agents/pat-ynoK2Q"
+set -euo pipefail
 
 TITLE=""
 BODY=""
@@ -9,7 +9,7 @@ BODY_FILE=""
 REPO=""
 BASE_BRANCH="master"
 HEAD_BRANCH=""
-SECRET_ARN="$DEFAULT_SECRET_ARN"
+SECRET_ARN=""
 
 DRAFT=false
 AUTO_PUSH=true

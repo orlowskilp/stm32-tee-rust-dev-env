@@ -1,5 +1,9 @@
 # STM32MP2 OP-TEE development environment template
 
+![Host app](https://img.shields.io/badge/Host_App_version-v0.1.0-orange)
+![Host app](https://img.shields.io/badge/TA_version-v0.1.0-orange)
+[![MIT License](https://img.shields.io/badge/license-MIT-green)](/LICENSE)
+
 A Rust-based Trusted Application and host application for the STM32MP2 platform, communicating through OP-TEE's secure world boundary. The TA runs in the TEE (Secure World) and the host application runs in Normal World Linux.
 
 ## Quick Start

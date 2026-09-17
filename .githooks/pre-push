@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+# SPDX-License-Identifier: MIT
+
+set -euo pipefail
+
+source "$(dirname "$0")/lib/run-in-devcontainer.sh"
+PREPUSH="${GREEN}[pre-push]${NC}"
+
+remote_name="${1:-}"
+
+zero_sha="0000000000000000000000000000000000000000"
+declare -a commits_to_check=()
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "${local_ref}" ]] && continue
+
+  # Deleting a ref does not introduce new commits.
+  if [[ "${local_sha}" == "${zero_sha}" ]]; then
+    continue
+  fi
+
+  if [[ "${remote_sha}" == "${zero_sha}" ]]; then
+    # New remote ref: check commits not already known on this remote.
+    if [[ -n "${remote_name}" ]]; then
+      while IFS= read -r commit; do
+        commits_to_check+=("${commit}")
+      done < <(git rev-list "${local_sha}" --not --remotes="${remote_name}")
+    else
+      # No remote name provided (e.g. manual push with no args). Fall back to
+      # local branches to avoid hanging on authentication when querying all remotes.
+      while IFS= read -r commit; do
+        commits_to_check+=("${commit}")
+      done < <(git rev-list "${local_sha}" --not --branches)
+    fi
+  else
+    while IFS= read -r commit; do
+      commits_to_check+=("${commit}")
+    done < <(git rev-list "${remote_sha}..${local_sha}")
+  fi
+done
+
+if [[ ${#commits_to_check[@]} -eq 0 ]]; then
+  exit 0
+fi
+
+declare -a unique_commits=()
+while IFS= read -r commit; do
+  unique_commits+=("${commit}")
+done < <(printf '%s\n' "${commits_to_check[@]}" | awk 'NF && !seen[$0]++')
+
+declare -a invalid_commits=()
+for commit in "${unique_commits[@]}"; do
+  # verify-commit fails for unsigned commits and invalid signatures.
+  if ! git verify-commit "${commit}" >/dev/null 2>&1; then
+    invalid_commits+=("${commit}")
+  fi
+done
+
+if [[ ${#invalid_commits[@]} -gt 0 ]]; then
+  echo -e "${PREPUSH} ${RED}push rejected: all pushed commits must be signed with valid signatures.${NC}" >&2
+  echo -e "${PREPUSH} failing commits:" >&2
+
+  for commit in "${invalid_commits[@]}"; do
+    echo -e "${PREPUSH}   - ${YELLOW}$(git --no-pager show -s --format='%h %s' "${commit}")${NC}" >&2
+  done
+
+  echo -e "${PREPUSH} ${RED}sign the commits and retry push.${NC}" >&2
+  exit 1
+fi

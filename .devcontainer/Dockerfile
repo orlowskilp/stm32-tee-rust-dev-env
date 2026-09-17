@@ -48,6 +48,7 @@ RUN pacman -Suy --disable-sandbox --noconfirm \
     less \
     direnv \
     unzip \
+    docker \
     sudo && \
     rm /var/cache/pacman/pkg/*
 
