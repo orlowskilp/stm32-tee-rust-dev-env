@@ -15,11 +15,14 @@ enum Command {
 impl TryFrom<u32> for Command {
     type Error = Error;
 
-    fn try_from(value: u32) -> core::result::Result<Self, Self::Error> {
+    fn try_from(value: u32) -> Result<Self> {
         match value {
             0 => Ok(Command::IncValue),
             1 => Ok(Command::DecValue),
-            _ => Err(Error::new(ErrorKind::BadParameters)),
+            v => {
+                trace_println!("Invalid command ID: {}", v);
+                Err(ErrorKind::BadParameters.into())
+            }
         }
     }
 }
@@ -49,8 +52,8 @@ fn ta_close_session() {
 /// Dispatches TA commands received from the normal world.
 ///
 /// Expects a single `ValueInout` parameter (arg 0) carrying a `u32` value.
-/// - `TA_CMD_INC_VALUE`: increments the value by 1 and echoes it back.
-/// - `TA_CMD_DEC_VALUE`: decrements the value by 1 and echoes it back.
+/// - `Command::IncValue`: increments the value by 1 and echoes it back.
+/// - `Command::DecValue`: decrements the value by 1 and echoes it back.
 /// Returns `BadParameters` if the argument type is not a value parameter or
 /// if arithmetic would overflow/underflow.
 #[ta_invoke_command]
@@ -59,23 +62,30 @@ fn ta_invoke_command(cmd_id: u32, params: &mut Parameters) -> Result<()> {
 
     // Validate parameter direction — TA expects ValueInout only.
     if !matches!(params.0.param_type, ParamType::ValueInout) {
-        return Err(Error::new(ErrorKind::BadParameters));
+        return Err(ErrorKind::BadParameters.into());
     }
-    // SAFETY: param direction verified above; host application code is trusted.
+    // SAFETY: The OP-TEE entry-point wrapper constructs this parameter from its valid
+    // TEE_Param array; the type check above confirms that value was set in this slot.
     let mut value = unsafe { params.0.as_value() }?;
 
-    let cmd = Command::try_from(cmd_id).map_err(|_| Error::new(ErrorKind::BadParameters))?;
+    let cmd = cmd_id.try_into()?;
     match cmd {
-        Command::IncValue => {
-            value.set_a(value.a().checked_add(1).ok_or(ErrorKind::BadParameters)?);
-            trace_println!("Incremented value: {}", value.a());
-            Ok(())
-        }
-        Command::DecValue => {
-            value.set_a(value.a().checked_sub(1).ok_or(ErrorKind::BadParameters)?);
-            trace_println!("Decremented value: {}", value.a());
-            Ok(())
-        }
+        Command::IncValue => value
+            .a()
+            .checked_add(1)
+            .map(|v| {
+                value.set_a(v);
+                trace_println!("Incremented value: {}", value.a());
+            })
+            .ok_or(ErrorKind::BadParameters.into()),
+        Command::DecValue => value
+            .a()
+            .checked_sub(1)
+            .map(|v| {
+                value.set_a(v);
+                trace_println!("Decremented value: {}", value.a());
+            })
+            .ok_or(ErrorKind::BadParameters.into()),
     }
 }
 
