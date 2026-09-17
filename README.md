@@ -223,3 +223,7 @@ make clean
 - [QUICKSTART.md](QUICKSTART.md) — step-by-step build, deploy, and run instructions
 - [Apache Teaclave TrustZone SDK](https://github.com/apache/teaclave-trustzone-sdk) — the upstream project containing the Rust `optee-utee` and `optee-teec` crates, along with 20+ TA/CA reference examples
 - [OP-TEE Documentation](https://optee.readthedocs.io) — official OP-TEE reference covering secure world architecture, client API, and TA development
+
+---
+
+Copyright (c) 2026 Lukasz P Orlowski <lukasz@orlowski.io>. All rights reserved.

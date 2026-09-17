@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 # ── Environment Setup ──────────────────────────────────────────────────────────
 #
 # The container sets these via devcontainer.json or by sourcing .envrc which

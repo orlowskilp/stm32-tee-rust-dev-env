@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# SPDX-License-Identifier: MIT
+
 # Set git username and email from environment variables if they are set
 if [ -n "$GIT_USERNAME" ]; then
     git config --global user.name "$GIT_USERNAME"
@@ -40,9 +42,6 @@ complete -C '/usr/bin/aws_completer' aws
 
 # Copy the .aws directory from the workspace to the home directory
 cp -r ${CONTAINER_WORKSPACE_FOLDER}/.aws ~/ 2>/dev/null || true
-
-# Add an alias for the `claude` command with specific options
-echo -e "\nalias claude='claude --model qwen3.6 --channels plugin:telegram@claude-plugins-official'" >> ~/.bashrc
 
 # Allow direnv to load environment variables every time a new shell is started
 echo -e "\ndirenv allow ${CONTAINER_WORKSPACE_FOLDER}" >> ~/.bashrc

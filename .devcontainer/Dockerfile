@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 ARG VERSION=latest
 ARG SDK_TARBALL_NAME=stm32mp2-openstlinux-6.6-yocto-scarthgap-mpu-v26.06.10
 ARG SDK_TARBALL_FILE=SDK-x86_64-${SDK_TARBALL_NAME}.tar.gz

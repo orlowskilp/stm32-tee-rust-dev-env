@@ -169,3 +169,7 @@ The TA and host both use `ParamValue` with `ParamType::ValueInout` in this examp
 
 - [Apache Teaclave TrustZone SDK](https://github.com/apache/teaclave-trustzone-sdk) — the upstream project containing the Rust bindings and 20+ TA/CA examples.
 - [OP-TEE Documentation](https://optee.readthedocs.io) — the official OP-TEE reference.
+
+---
+
+Copyright (c) 2026 Lukasz P Orlowski <lukasz@orlowski.io>. All rights reserved.
