@@ -13,13 +13,13 @@ enum Command {
 }
 
 impl TryFrom<u32> for Command {
-    type Error = u32;
+    type Error = Error;
 
     fn try_from(value: u32) -> core::result::Result<Self, Self::Error> {
         match value {
             0 => Ok(Command::IncValue),
             1 => Ok(Command::DecValue),
-            v => Err(v),
+            _ => Err(Error::new(ErrorKind::BadParameters)),
         }
     }
 }

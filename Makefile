@@ -36,14 +36,10 @@ CROSS_COMPILE ?= aarch64-ostl-linux-
 OECORE_TARGET_SYSROOT ?= /opt/sdk/sysroots/cortexa35-ostl-linux
 TA_DEV_KIT_DIR ?= /opt/sdk/sysroots/cortexa35-ostl-linux/usr/include/optee/export-user_ta_arm64
 
-# ── User ─────────────────────────────────────────────────────────────────────
-# The user running the make commands. Defaults to the current system user.
-USER ?= $(shell whoami)
-
 # ── Deploy target ──────────────────────────────────────────────────────────────
-# The user for SSH/SCP deploy operations. Defaults to `root` for board access.
+# The user for SSH/SCP deploy operations. Defaults to `current user for board access.
 # Override with `make deploy DEPLOY_USER=otheruser`.
-DEPLOY_USER ?= root
+DEPLOY_USER ?= $(shell whoami)
 
 # ── Host application ───────────────────────────────────────────────────────────
 # Default name of the host application binary. Can be overridden on the command line
