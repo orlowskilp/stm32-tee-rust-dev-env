@@ -10,7 +10,7 @@ build-std = ["core", "alloc"]
 
 [target.aarch64-unknown-linux-gnu]
 # Map standard cross-compilation hooks over to your sourced OSTL wrappers
-linker = "aarch64-ostl-linux-gnu-gcc"
+linker = "aarch64-ostl-linux-gcc"
 
 rustflags = [
   "-C",

@@ -73,9 +73,9 @@ Key points:
 
 The build process places the signed TA binary at `ta/target/aarch64-unknown-linux-gnu/release/<uuid>.ta` and the host binary at `host/target/aarch64-unknown-linux-gnu/release/hello-world-host`.
 
-The root Makefile delegates all build, format, and lint targets to the sub-Makefiles. Standalone invocation (e.g. `make -C ta ta`) requires `CROSS_COMPILE`, `TA_SIGN_KEY`, and `TA_SIGN_SCRIPT` to be set, or you must export them in your shell before running `make`.
+The root Makefile delegates all build, format, and lint targets to the sub-Makefiles. Standalone invocation (e.g. `make -C ta`) requires `CROSS_COMPILE`, `TA_SIGN_KEY`, and `TA_SIGN_SCRIPT` to be set, or you must export them in your shell before running `make`.
 
-Cross-compilation is configured via `.cargo/config.toml` in both `ta/` and `host/`. The linker is set to `aarch64-ostl-linux-gnu-gcc` (Yocto's cross-compiler) and the sysroot is injected via a `-C link-arg=--sysroot=/opt/sdk/sysroots/cortexa35-ostl-linux` rustflag. Note that this path is hardcoded in `.cargo/config.toml`; users with non-default SDK paths must update it there.
+Cross-compilation is configured via `.cargo/config.toml` in both `ta/` and `host/`. The linker is set to `aarch64-ostl-linux-gcc` (Yocto's cross-compiler) and the sysroot is injected via a `-C link-arg=--sysroot=/opt/sdk/sysroots/cortexa35-ostl-linux` rustflag. Note that this path is hardcoded in `.cargo/config.toml`; users with non-default SDK paths must update it there.
 
 ## Configuration
 
@@ -159,7 +159,7 @@ Alternatively, deploy manually:
 # Deploy the TA
 scp ta/target/aarch64-unknown-linux-gnu/release/$(cat ta/uuid.txt).ta root@<board-address>:/lib/optee_armtz/
 
-# Deploy the host app
+# Deploy the host app — the binary name matches the package name in `host/Cargo.toml`
 scp host/target/aarch64-unknown-linux-gnu/release/hello-world-host root@<board-address>:/root/
 ```
 
@@ -212,7 +212,7 @@ make clean
 
 - **no_std TA** — The Trusted Application compiles with `#![no_std]` by default (`#![cfg_attr(not(feature = "std"), no_std)]` in `ta/src/main.rs`). The `std` feature on the TA crate exists but requires a nightly toolchain and `-Z build-std` to activate — only enable it if the board's OP-TEE was built with the matching feature.
 
-- **Cross-compilation required** — Both the TA and host are cross-compiled for `aarch64-unknown-linux-gnu` via `.cargo/config.toml` in each subdirectory. The linker is set to the Yocto cross-compiler (`aarch64-ostl-linux-gnu-gcc`) and the sysroot is injected via rustflags. Running `cargo build` without the target triple will target your host architecture, which is useless on the STM32MP2 board.
+- **Cross-compilation required** — Both the TA and host have `[build] target = "aarch64-unknown-linux-gnu"` configured in their respective `.cargo/config.toml` files, so `cargo build` from within either subdirectory will automatically target ARM64.
 
 - **RSA signing only** — OP-TEE's TA signature mechanism accepts RSA-PSS (SHA-256) keys. ECDSA keys are not supported by the signing flow (`sign_encrypt.py`). The default SDK key is a 2048-bit RSA key; production deployments must use a board-specific key provisioned into the OP-TEE core.
 

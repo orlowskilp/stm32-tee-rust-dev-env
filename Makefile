@@ -40,12 +40,17 @@ TA_DEV_KIT_DIR ?= /opt/sdk/sysroots/cortexa35-ostl-linux/usr/include/optee/expor
 # The user running the make commands. Defaults to the current system user.
 USER ?= $(shell whoami)
 
+# ── Deploy target ──────────────────────────────────────────────────────────────
+# The user for SSH/SCP deploy operations. Defaults to `root` for board access.
+# Override with `make deploy DEPLOY_USER=otheruser`.
+DEPLOY_USER ?= root
+
 # ── Host application ───────────────────────────────────────────────────────────
 # Default name of the host application binary. Can be overridden on the command line
 # (`make VAR=value`) or via environment variable. The host/Makefile computes this
 # dynamically from `cargo pkgid`, so this default is only used when the parent
 # Makefile passes it explicitly (see `host` and `deploy` targets).
-HOST_APP ?= hello-world-host
+HOST_APP ?= $(shell cargo pkgid --manifest-path host/Cargo.toml | awk -F '#' '{ print $$2 }' | awk -F '@' '{ print $$1 }')
 
 # ── UUID ───────────────────────────────────────────────────────────────────────
 # Path to the file containing the TA UUID. Can be overridden on the command line
@@ -111,11 +116,11 @@ deploy:
 		exit 1; \
 	fi
 	@echo -e "=== Deploying artifacts to the board ($(BOARD_ADDRESS)) ===\n"
-	scp ta/$(UUID).ta host/$(HOST_APP) $(USER)@$(BOARD_ADDRESS):~
+	scp ta/$(UUID).ta host/$(HOST_APP) $(DEPLOY_USER)@$(BOARD_ADDRESS):~
 	@echo -e "=== Deployed. Run on board:\n"
-	ssh $(USER)@$(BOARD_ADDRESS) "sudo mv ~/$(UUID).ta /lib/optee_armtz/; sudo ./$(HOST_APP)"
+	ssh $(DEPLOY_USER)@$(BOARD_ADDRESS) "sudo mv ~/$(UUID).ta /lib/optee_armtz/; sudo ./$(HOST_APP)"
 	@echo -e "=== Verifying deployment ===\n"
-	@if ! ssh $(USER)@$(BOARD_ADDRESS) "test -f /lib/optee_armtz/$(UUID).ta && test -f ~/$(HOST_APP)"; then \
+	@if ! ssh $(DEPLOY_USER)@$(BOARD_ADDRESS) "test -f /lib/optee_armtz/$(UUID).ta && test -f ~/$(HOST_APP)"; then \
 		echo "ERROR: Deployment verification failed on board."; \
 		exit 1; \
 	fi

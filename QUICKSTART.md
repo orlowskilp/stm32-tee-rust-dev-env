@@ -1,6 +1,6 @@
 # Quickstart
 
-Get a Rust TA + host app building and running on your STM32MP2 board in five steps.
+Get a Rust TA + host app building and running on your STM32MP2 board in four steps.
 
 ## Prerequisites
 
@@ -27,17 +27,7 @@ Generate a UUID for the TA and populate `ta/uuid.txt`:
 make init
 ```
 
-## Step 1 — Clone the TrustZone SDK
-
-```bash
-mkdir -p crates && cd crates && git clone https://github.com/apache/teaclave-trustzone-sdk.git trustzone-sdk && cd trustzone-sdk && git checkout -b v4.10.0 tags/v4.10.0 && cd ../..
-```
-
-This pulls the Apache Teaclave TrustZone SDK, which provides the Rust bindings for OP-TEE (`optee-utee` for TAs, `optee-teec` for host apps).
-
-> **Note:** Verify that your STM32MP2 SDK ships the matching OP-TEE version.
-
-## Step 2 — Build
+## Step 1 — Build
 
 ```bash
 # Build the Trusted Application (TA) — produces a signed .ta binary.
@@ -82,7 +72,7 @@ To use the default SDK key, run `make ta` without overrides — it is the Makefi
 RSA is the only supported signing algorithm for TAs. ECDSA is not supported by
 OP-TEE's TA signature mechanism.
 
-## Step 3 — Deploy
+## Step 2 — Deploy
 
 ```bash
 make deploy BOARD_ADDRESS=<your-board-address>
@@ -98,7 +88,7 @@ scp ta/target/aarch64-unknown-linux-gnu/release/$(cat ta/uuid.txt).ta root@<your
 scp host/target/aarch64-unknown-linux-gnu/release/hello-world-host root@<your-board-address>:/root/
 ```
 
-## Step 4 — Run
+## Step 3 — Run
 
 ```bash
 ssh root@<your-board-address> sudo ./hello-world-host
@@ -162,7 +152,7 @@ Edit `ta/uuid.txt`. The host's `build.rs` reads `uuid.txt` at build time and gen
 
 ### Add new commands
 
-In `ta/src/main.rs`, add a new constant to `TA_CMD_*` and a new arm to the `match` in `ta_invoke_command()`. In the host app, add the matching constant and call `session.invoke_command()` with the new command ID.
+In `ta/src/main.rs`, add a new variant to the `Command` enum and a new arm to the `match` in `ta_invoke_command()`. In the host app, add the matching enum variant and call `session.invoke_command()` with it.
 
 ### Use parameter types other than values
 
@@ -172,7 +162,7 @@ The TA and host both use `ParamValue` with `ParamType::ValueInout` in this examp
 
 - **OP-TEE version:** The Teaclave SDK crates target OP-TEE 4.10.0 (via `v0.9.0` tag). Version mismatches between the SDK bindings and the OP-TEE runtime on your board will cause ABI issues.
 - **No-std:** The TA builds with `no_std` by default (requires nightly Rust via `ta/rust-toolchain.toml`). The `std` feature is available for advanced features like TLS inside a TA.
-- **Cross-compilation:** Everything is cross-compiled for `aarch64-unknown-linux-gnu` via `.cargo/config.toml`. Do not run `cargo build` without the target flag — it will target your host architecture instead.
+- **Cross-compilation:** Both sub-projects have `[build] target` configured in `.cargo/config.toml` set to `aarch64-unknown-linux-gnu`, so `cargo build` from within the `ta/` or `host/` directory will automatically target ARM64.
 - **Per-subproject toolchain:** The TA uses nightly Rust (`ta/rust-toolchain.toml`) and the host uses stable (`host/rust-toolchain.toml`).
 
 ## Further Reading

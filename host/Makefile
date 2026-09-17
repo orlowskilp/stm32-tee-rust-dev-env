@@ -1,5 +1,5 @@
 # Verbose cargo output when V=1 is passed (e.g., `make V=1`).
-CARGO_VERBOSE := $(if $(V),$(V),)
+CARGO_VERBOSE := $(if $(V),--verbose,)
 
 # ── Host Application Name ─────────────────────────────────────────────────────
 # Extract the host application name from the Cargo package ID.

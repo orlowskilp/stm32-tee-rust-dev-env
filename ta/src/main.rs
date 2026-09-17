@@ -3,7 +3,7 @@
 
 use optee_utee::{
     ta_close_session, ta_create, ta_destroy, ta_invoke_command, ta_open_session, trace_println,
-    ErrorKind, Parameters, Result,
+    Error, ErrorKind, ParamType, Parameters, Result,
 };
 
 // Command IDs — these must match the values used by the host application.
@@ -12,12 +12,14 @@ enum Command {
     DecValue = 1,
 }
 
-impl From<u32> for Command {
-    fn from(value: u32) -> Self {
+impl TryFrom<u32> for Command {
+    type Error = u32;
+
+    fn try_from(value: u32) -> core::result::Result<Self, Self::Error> {
         match value {
-            0 => Command::IncValue,
-            1 => Command::DecValue,
-            _ => panic!("Invalid command value"),
+            0 => Ok(Command::IncValue),
+            1 => Ok(Command::DecValue),
+            v => Err(v),
         }
     }
 }
@@ -54,9 +56,16 @@ fn ta_close_session() {
 #[ta_invoke_command]
 fn ta_invoke_command(cmd_id: u32, params: &mut Parameters) -> Result<()> {
     trace_println!("Command invoked: {}", cmd_id);
-    // SAFETY: params provided in the host application; verify host app code.
+
+    // Validate parameter direction — TA expects ValueInout only.
+    if !matches!(params.0.param_type, ParamType::ValueInout) {
+        return Err(Error::new(ErrorKind::BadParameters));
+    }
+    // SAFETY: param direction verified above; host application code is trusted.
     let mut value = unsafe { params.0.as_value() }?;
-    match cmd_id.into() {
+
+    let cmd = Command::try_from(cmd_id).map_err(|_| Error::new(ErrorKind::BadParameters))?;
+    match cmd {
         Command::IncValue => {
             value.set_a(value.a().checked_add(1).ok_or(ErrorKind::BadParameters)?);
             trace_println!("Incremented value: {}", value.a());

@@ -1,8 +1,10 @@
 # Verbose cargo output when V=1 is passed (e.g., `make V=1`).
-CARGO_VERBOSE := $(if $(V),$(V),)
+CARGO_VERBOSE := $(if $(V),--verbose,)
 
 # ── Build Target ──────────────────────────────────────────────────────────────
 TARGET ?= aarch64-unknown-linux-gnu
+
+UUID ?= $(shell cat uuid.txt 2>/dev/null || echo 00000000-0000-0000-0000-000000000000)
 
 # ── Package Name ──────────────────────────────────────────────────────────────
 PKG_NAME := $(shell cargo pkgid | awk -F '#'  '{ print $$2 }' | awk -F '@' '{ print $$1 }')
