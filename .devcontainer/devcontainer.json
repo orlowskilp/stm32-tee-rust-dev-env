@@ -71,9 +71,10 @@
   "runArgs": [
     "--name=stm32-tee-dev",
     "--platform=linux/amd64",
-    "--cap-add=SYS_PTRACE",
-    "--security-opt",
-    "seccomp=unconfined"
+    "--cap-drop=NET_RAW",
+    "--cap-drop=MKNOD",
+    "--cap-drop=SYS_CHROOT",
+    "--cap-add=SYS_PTRACE"
   ],
   // App port to connect to memory service from the browser on the local network.
   "appPort": [
