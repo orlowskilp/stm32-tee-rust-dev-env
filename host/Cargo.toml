@@ -1,15 +1,12 @@
 [package]
 name = "hello-world-host"
 version = "0.1.0"
-authors = ["Lukasz P Orlowski <lukasz@orlowski.io>"]
-edition = "2021"
-license = "MIT"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
 publish = false
 
 [dependencies]
-optee-teec = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-teec", tag = "v0.9.0" }
-optee-teec-build = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-teec-build", tag = "v0.9.0" }
-optee-teec-sys = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-teec-sys", tag = "v0.9.0" }
-
-[profile.release]
-opt-level = 1
+optee-teec = { workspace = true }
+optee-teec-build = { workspace = true }
+optee-teec-sys = { workspace = true }

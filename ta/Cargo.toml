@@ -1,30 +1,25 @@
+# SPDX-License-Identifier: MIT
+
 [package]
 name = "hello-world-ta"
 version = "0.1.0"
-authors = ["Lukasz P Orlowski <lukasz@orlowski.io>"]
-edition = "2021"
-license = "MIT"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
 publish = false
 
 [package.metadata.optee.ta]
 uuid-path = "uuid.txt"
 
-[workspace]
-
 [dependencies]
-optee-utee = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-utee", tag = "v0.9.0" }
-optee-utee-sys = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-utee-sys", tag = "v0.9.0" }
+optee-utee = { workspace = true }
+optee-utee-sys = { workspace = true }
 
 [build-dependencies]
-optee-utee-build = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-utee-build", tag = "v0.9.0" }
+optee-utee-build = { workspace = true }
 
 # The `std` feature enables std-mode builds (requires nightly + `-Z build-std`).
 # Without it, the crate compiles with `no_std` for TA execution in the TEE.
 [features]
 default = []
 std = []
-
-[profile.release]
-panic = "abort"
-lto = true
-opt-level = 1
