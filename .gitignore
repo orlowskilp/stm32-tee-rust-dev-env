@@ -16,3 +16,4 @@ ta/dyn_list
 host/uuid.txt
 host/hello-world-host
 ta/*.ta
+dyn_list

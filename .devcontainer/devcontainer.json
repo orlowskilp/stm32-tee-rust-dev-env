@@ -91,6 +91,7 @@
     "source=${localEnv:HOME}/.bun,target=/home/vscode/.bun,type=bind"
   ],
   "remoteUser": "vscode",
+  "initializeCommand": "stat -c %g /var/run/docker.sock > ${localWorkspaceFolder}/.devcontainer/docker_gid",
   "postCreateCommand": "source ${containerWorkspaceFolder}/.envrc || true && ${containerWorkspaceFolder}/.devcontainer/commands/post-create.sh",
   "postStartCommand": "${containerWorkspaceFolder}/.devcontainer/commands/post-start.sh"
 }

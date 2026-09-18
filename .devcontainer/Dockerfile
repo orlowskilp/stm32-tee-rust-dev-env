@@ -52,12 +52,15 @@ RUN pacman -Suy --disable-sandbox --noconfirm \
     sudo && \
     rm /var/cache/pacman/pkg/*
 
+# Install Python dependencies
 RUN pip install cryptography \
     --break-system-packages \
     --root-user-action=ignore
 
-# Create a non-root user set it up and roll over to it
-RUN useradd -ms /bin/bash ${USERNAME} && \
+# Map host Docker group ID to the container Docker group to allow non-root Docker usage
+RUN --mount=type=bind,source=.devcontainer/docker_gid,target=/tmp/docker_gid \
+    groupmod -g "$(cat /tmp/docker_gid)" docker && \
+    useradd -ms /bin/bash -G wheel,docker ${USERNAME} && \
     echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Set up locale to install SDK correctly

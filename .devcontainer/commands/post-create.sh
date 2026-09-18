@@ -2,6 +2,9 @@
 
 # SPDX-License-Identifier: MIT
 
+# Remove the mnemonic file for the Docker GID
+rm -f ${CONTAINER_WORKSPACE_FOLDER}/.devcontainer/docker_gid
+
 # Set git username and email from environment variables if they are set
 if [ -n "$GIT_USERNAME" ]; then
     git config --global user.name "$GIT_USERNAME"
@@ -28,6 +31,7 @@ if [ -d ".githooks" ]; then
     git config --global core.hooksPath .githooks
 fi
 
+# Create a .envrc file in the workspace if it doesn't exist
 if [ ! -f ${CONTAINER_WORKSPACE_FOLDER}/.envrc ]; then
     touch ${CONTAINER_WORKSPACE_FOLDER}/.envrc
 fi
