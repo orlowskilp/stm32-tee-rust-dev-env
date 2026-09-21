@@ -42,6 +42,7 @@ dependencies = [
  "optee-teec",
  "optee-teec-build",
  "optee-teec-sys",
+ "ta-common",
 ]
 
 [[package]]
@@ -51,6 +52,7 @@ dependencies = [
  "optee-utee",
  "optee-utee-build",
  "optee-utee-sys",
+ "ta-common",
 ]
 
 [[package]]
@@ -296,6 +298,10 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
+
+[[package]]
+name = "ta-common"
+version = "0.1.0"
 
 [[package]]
 name = "toml_datetime"

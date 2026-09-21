@@ -10,3 +10,4 @@ publish = false
 optee-teec = { workspace = true }
 optee-teec-build = { workspace = true }
 optee-teec-sys = { workspace = true }
+ta-common = { path = "../ta-common" }

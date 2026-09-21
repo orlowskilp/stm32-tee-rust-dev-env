@@ -1,23 +1,12 @@
 // SPDX-License-Identifier: MIT
 
 use optee_teec::{Context, Operation, ParamNone, ParamType, ParamValue, Result, Uuid};
+use ta_common::Command;
 
 // TA_UUID is generated at build time from uuid.txt and included via read_uuid.rs.
 include!(concat!(env!("OUT_DIR"), "/read_uuid.rs"));
 
 const TEST_VALUE: u32 = 42;
-
-/// Command IDs — must match the values defined in the TA.
-enum Command {
-    IncValue = 0,
-    DecValue = 1,
-}
-
-impl From<Command> for u32 {
-    fn from(cmd: Command) -> Self {
-        cmd as u32
-    }
-}
 
 fn main() -> Result<()> {
     // Open a session to the hello_world TA.

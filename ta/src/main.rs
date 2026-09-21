@@ -7,27 +7,7 @@ use optee_utee::{
     ta_close_session, ta_create, ta_destroy, ta_invoke_command, ta_open_session, trace_println,
     Error, ErrorKind, ParamType, Parameters, Result,
 };
-
-// Command IDs — these must match the values used by the host application.
-enum Command {
-    IncValue = 0,
-    DecValue = 1,
-}
-
-impl TryFrom<u32> for Command {
-    type Error = Error;
-
-    fn try_from(value: u32) -> Result<Self> {
-        match value {
-            0 => Ok(Command::IncValue),
-            1 => Ok(Command::DecValue),
-            v => {
-                trace_println!("Invalid command ID: {}", v);
-                Err(ErrorKind::BadParameters.into())
-            }
-        }
-    }
-}
+use ta_common::Command;
 
 #[ta_create]
 fn ta_create() -> Result<()> {
@@ -70,7 +50,7 @@ fn ta_invoke_command(cmd_id: u32, params: &mut Parameters) -> Result<()> {
     // TEE_Param array; the type check above confirms that value was set in this slot.
     let mut value = unsafe { params.0.as_value() }?;
 
-    let cmd = cmd_id.try_into()?;
+    let cmd = Command::from_raw(cmd_id).ok_or(Error::from(ErrorKind::BadParameters))?;
     match cmd {
         Command::IncValue => value
             .a()

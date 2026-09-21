@@ -167,12 +167,10 @@ lint: check-cargo check-dprint copy-uuid
 	@echo "=== Linting Host (std) ==="
 	OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
 	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
-	cargo $(CARGO_VERBOSE) check -p hello-world-host \
-		--all-targets \
-		--target $(TARGET)
 	cargo $(CARGO_VERBOSE) clippy -p hello-world-host \
 		--all-targets \
 		--target $(TARGET) \
+		--release \
 		-- -D warnings
 
 .PHONY: copy-uuid
