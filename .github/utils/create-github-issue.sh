@@ -39,8 +39,8 @@ Optional:
   -h, --help                    Show this help
 
 Environment:
-  SECRET_ARN                    AWS Secrets Manager ARN of the PAT secret (required).
-  GH_TOKEN                      Optional pre-set GitHub token. If missing, fetched from SECRET_ARN.
+  GH_TOKEN                      Optional pre-set GitHub token. If set, AWS is not required.
+  SECRET_ARN                    AWS Secrets Manager ARN of the PAT secret (required only if GH_TOKEN is not set).
 
 Examples:
   create-github-issue.sh \
@@ -237,7 +237,10 @@ main() {
   require_cmd gh
   parse_args "$@"
 
-  : "${SECRET_ARN:?SECRET_ARN is required (set as environment variable)}"
+  # SECRET_ARN is only required when GH_TOKEN is not already set
+  if [[ -z "${GH_TOKEN:-}" ]]; then
+    : "${SECRET_ARN:?SECRET_ARN is required (set as environment variable)}"
+  fi
 
   if [[ -z "$TITLE" ]]; then
     echo "Missing required argument: --title" >&2

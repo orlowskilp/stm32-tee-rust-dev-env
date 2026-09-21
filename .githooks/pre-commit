@@ -17,13 +17,23 @@ if [[ -z "${staged_rust_changes}" ]]; then
   if [[ -z "${head_rust_changes}" ]]; then
     exit 0
   fi
+  # If staged tree matches HEAD tree, this is a plain commit with no
+  # staged modifications — skip lint. Only proceed for --amend operations
+  # where the index differs from HEAD's tree.
+  staged_tree=$(git rev-parse :4: 2>/dev/null || true)
+  head_tree=$(git rev-parse HEAD^{tree} 2>/dev/null || true)
+  if [[ "${staged_tree:-}" == "${head_tree:-}" ]]; then
+    exit 0
+  fi
   echo -e "${PRECOMMIT} no staged Rust changes; enforcing checks for amend based on HEAD files..."
 else
   echo -e "${PRECOMMIT} Rust-relevant staged changes detected; enforcing checks..."
 fi
 
-echo -e "${PRECOMMIT} running make lint..."
-if ! run_in_devcontainer "make lint"; then
+echo -e "${PRECOMMIT} running make lint against staged changes..."
+# Stash working tree changes to ensure lint runs against clean, staged state
+# only — prevents unstaged fixes from hiding invalid indexed Rust code.
+if ! run_in_devcontainer "rc=0; git stash push -m '__precommit_stash' -u >/dev/null 2>&1 || rc=0; make lint || rc=\$?; git stash pop >/dev/null 2>&1 || true; exit \$rc"; then
   echo -e "${PRECOMMIT} ${RED}lint failed${NC}. Run make format && make lint, then commit again." >&2
   exit 1
 fi

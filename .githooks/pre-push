@@ -23,20 +23,32 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   if [[ "${remote_sha}" == "${zero_sha}" ]]; then
     # New remote ref: check commits not already known on this remote.
     if [[ -n "${remote_name}" ]]; then
+      remote_rev=$(git rev-list "${local_sha}" --not --remotes="${remote_name}" 2>&1) || {
+        echo -e "${PREPUSH} failed to resolve commits on remote '${remote_name}'.${NC}" >&2
+        exit 1
+      }
       while IFS= read -r commit; do
-        commits_to_check+=("${commit}")
-      done < <(git rev-list "${local_sha}" --not --remotes="${remote_name}")
+        [[ -n "$commit" ]] && commits_to_check+=("${commit}")
+      done <<< "$remote_rev"
     else
       # No remote name provided (e.g. manual push with no args). Fall back to
       # local branches to avoid hanging on authentication when querying all remotes.
+      local_rev=$(git rev-list "${local_sha}" --not --branches 2>&1) || {
+        echo -e "${PREPUSH} failed to resolve local commits.${NC}" >&2
+        exit 1
+      }
       while IFS= read -r commit; do
-        commits_to_check+=("${commit}")
-      done < <(git rev-list "${local_sha}" --not --branches)
+        [[ -n "$commit" ]] && commits_to_check+=("${commit}")
+      done <<< "$local_rev"
     fi
   else
+    remote_local_rev=$(git rev-list "${remote_sha}..${local_sha}" 2>&1) || {
+      echo -e "${PREPUSH} failed to resolve commits between '${remote_sha}' and '${local_sha}'.${NC}" >&2
+      exit 1
+    }
     while IFS= read -r commit; do
-      commits_to_check+=("${commit}")
-    done < <(git rev-list "${remote_sha}..${local_sha}")
+      [[ -n "$commit" ]] && commits_to_check+=("${commit}")
+    done <<< "$remote_local_rev"
   fi
 done
 
