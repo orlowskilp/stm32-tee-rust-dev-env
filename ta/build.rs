@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 //! Build script for the hello world TA (Trusted Application)
 //!
 //! Configures cross-compilation metadata and linker flags for the TA.

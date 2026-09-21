@@ -1,4 +1,4 @@
-# .cargo/config.toml
+# SPDX-License-Identifier: MIT
 
 [build]
 target = "aarch64-unknown-linux-gnu"

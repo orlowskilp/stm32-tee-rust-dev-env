@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
 set -e
 
 PKG_VERSION=v$(grep '^version =' Cargo.toml | head -1 | awk -F'"' '{print $2}')

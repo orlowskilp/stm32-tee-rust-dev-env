@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 {
   "name": "Arch Linux Dev Box",
   "build": {
@@ -61,16 +62,19 @@
         "Codecov.codecov",
         "ms-vscode.cpptools",
         "ms-vscode.cpptools-extension-pack",
-        "ms-vscode.cpp-devtools"
+        "ms-vscode.cpp-devtools",
+        "docker.docker",
+        "ms-azuretools.vscode-docker"
       ]
     }
   },
   "runArgs": [
     "--name=stm32-tee-dev",
     "--platform=linux/amd64",
-    "--cap-add=SYS_PTRACE",
-    "--security-opt",
-    "seccomp=unconfined"
+    "--cap-drop=NET_RAW",
+    "--cap-drop=MKNOD",
+    "--cap-drop=SYS_CHROOT",
+    "--cap-add=SYS_PTRACE"
   ],
   // App port to connect to memory service from the browser on the local network.
   "appPort": [
@@ -82,14 +86,13 @@
   ],
   "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
-    // Remove once migration is complete.
-    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind",
     "source=${localEnv:HOME}/.local/share/opencode,target=/home/vscode/.local/share/opencode,type=bind",
     "source=${localEnv:HOME}/.config/opencode,target=/home/vscode/.config/opencode,type=bind",
     "source=${localEnv:HOME}/.opencode-mem,target=/home/vscode/.opencode-mem,type=bind",
     "source=${localEnv:HOME}/.bun,target=/home/vscode/.bun,type=bind"
   ],
   "remoteUser": "vscode",
+  "initializeCommand": "stat -c %g /var/run/docker.sock > ${localWorkspaceFolder}/.devcontainer/docker_gid",
   "postCreateCommand": "source ${containerWorkspaceFolder}/.envrc || true && ${containerWorkspaceFolder}/.devcontainer/commands/post-create.sh",
   "postStartCommand": "${containerWorkspaceFolder}/.devcontainer/commands/post-start.sh"
 }

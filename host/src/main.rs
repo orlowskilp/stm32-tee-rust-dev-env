@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use optee_teec::{Context, Operation, ParamNone, ParamType, ParamValue, Result, Uuid};
 
 // TA_UUID is generated at build time from uuid.txt and included via read_uuid.rs.

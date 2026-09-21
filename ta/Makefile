@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 # Build the OP-TEE Trusted Application: cargo build → objcopy strip → sign.
 #
 # ── Verbosity ─────────────────────────────────────────────────────────────────

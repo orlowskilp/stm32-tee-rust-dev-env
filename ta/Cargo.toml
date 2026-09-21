@@ -1,7 +1,9 @@
 [package]
 name = "hello-world-ta"
 version = "0.1.0"
+authors = ["Lukasz P Orlowski <lukasz@orlowski.io>"]
 edition = "2021"
+license = "MIT"
 publish = false
 
 [package.metadata.optee.ta]

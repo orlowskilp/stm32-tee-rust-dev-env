@@ -1,5 +1,9 @@
 # STM32MP2 OP-TEE development environment template
 
+![Host App](https://img.shields.io/badge/Host_App_version-v0.1.0-orange)
+![TA](https://img.shields.io/badge/TA_version-v0.1.0-orange)
+[![MIT License](https://img.shields.io/badge/license-MIT-green)](/LICENSE)
+
 A Rust-based Trusted Application and host application for the STM32MP2 platform, communicating through OP-TEE's secure world boundary. The TA runs in the TEE (Secure World) and the host application runs in Normal World Linux.
 
 ## Quick Start
@@ -223,3 +227,7 @@ make clean
 - [QUICKSTART.md](QUICKSTART.md) — step-by-step build, deploy, and run instructions
 - [Apache Teaclave TrustZone SDK](https://github.com/apache/teaclave-trustzone-sdk) — the upstream project containing the Rust `optee-utee` and `optee-teec` crates, along with 20+ TA/CA reference examples
 - [OP-TEE Documentation](https://optee.readthedocs.io) — official OP-TEE reference covering secure world architecture, client API, and TA development
+
+---
+
+Copyright (c) 2026 Lukasz P Orlowski <lukasz@orlowski.io>. All rights reserved.

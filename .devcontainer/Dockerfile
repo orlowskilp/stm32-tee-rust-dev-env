@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 ARG VERSION=latest
 ARG SDK_TARBALL_NAME=stm32mp2-openstlinux-6.6-yocto-scarthgap-mpu-v26.06.10
 ARG SDK_TARBALL_FILE=SDK-x86_64-${SDK_TARBALL_NAME}.tar.gz
@@ -46,15 +48,19 @@ RUN pacman -Suy --disable-sandbox --noconfirm \
     less \
     direnv \
     unzip \
+    docker \
     sudo && \
     rm /var/cache/pacman/pkg/*
 
+# Install Python dependencies
 RUN pip install cryptography \
     --break-system-packages \
     --root-user-action=ignore
 
-# Create a non-root user set it up and roll over to it
-RUN useradd -ms /bin/bash ${USERNAME} && \
+# Map host Docker group ID to the container Docker group to allow non-root Docker usage
+RUN --mount=type=bind,source=.devcontainer/docker_gid,target=/tmp/docker_gid \
+    groupmod -g "$(cat /tmp/docker_gid)" docker && \
+    useradd -ms /bin/bash -G wheel,docker ${USERNAME} && \
     echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Set up locale to install SDK correctly

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+#
 # Build the host application for OP-TEE integration (cargo build).
 #
 # ── Verbosity ─────────────────────────────────────────────────────────────────
