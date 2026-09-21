@@ -3,14 +3,14 @@
 [build]
 target = "aarch64-unknown-linux-gnu"
 
-[unstable]
-build-std = ["core", "alloc"]
-
 [target.aarch64-unknown-linux-gnu]
 # Map standard cross-compilation hooks over to your sourced OSTL wrappers
 linker = "aarch64-ostl-linux-gcc"
 
 rustflags = [
+  # sysroot path is hardcoded for the devcontainer environment.
+  # If building outside the devcontainer, update this path to match
+  # your Yocto SDK installation location (set via OECORE_TARGET_SYSROOT).
   "-C",
   "link-arg=--sysroot=/opt/sdk/sysroots/cortexa35-ostl-linux",
   "-C",

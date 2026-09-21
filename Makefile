@@ -108,6 +108,7 @@ clean: check-cargo
 	cargo clean
 	rm -f host/$(HOST_APP)
 	rm -f ta/*.ta
+	rm -f dyn_list
 
 # ── Deploy ────────────────────────────────────────────────────────────────────
 # Deploy the TA and host app to an STM32MP2 board running OP-TEE.
@@ -153,15 +154,15 @@ lint: check-cargo check-dprint copy-uuid
 	dprint check
 	cargo fmt --check
 	@echo "=== Linting TA (no_std) ==="
+	# The TA is a cdylib with no binary targets, so --bins would cause cargo check
+	# and cargo clippy to be a no-op. Omit --bins to lint the entire TA crate.
 	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
 	cargo $(CARGO_VERBOSE) check -p hello-world-ta \
 		--target $(TARGET) \
-		--release \
-		--bins
+		--release
 	cargo $(CARGO_VERBOSE) clippy -p hello-world-ta \
 		--target $(TARGET) \
 		--release \
-		--bins \
 		-- -D warnings
 	@echo "=== Linting Host (std) ==="
 	OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
