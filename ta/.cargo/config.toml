@@ -1,20 +1,2 @@
-# SPDX-License-Identifier: MIT
-
 [build]
-target = "aarch64-unknown-linux-gnu"
-
-[unstable]
-# This tells cargo to build core and alloc locally using rust-src,
-# resolving the "missing rust-std component" error entirely.
 build-std = ["core", "alloc"]
-
-[target.aarch64-unknown-linux-gnu]
-# Map standard cross-compilation hooks over to your sourced OSTL wrappers
-linker = "aarch64-ostl-linux-gcc"
-
-rustflags = [
-  "-C",
-  "link-arg=--sysroot=/opt/sdk/sysroots/cortexa35-ostl-linux",
-  "-C",
-  "linker-flavor=gcc",
-]

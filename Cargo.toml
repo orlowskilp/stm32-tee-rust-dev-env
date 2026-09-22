@@ -1,0 +1,25 @@
+[workspace]
+members = ["host", "ta"]
+resolver = "2"
+
+[workspace.package]
+authors = ["Lukasz P Orlowski <lukasz@orlowski.io>"]
+edition = "2021"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+optee-teec = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-teec", tag = "v0.9.0" }
+optee-teec-build = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-teec-build", tag = "v0.9.0" }
+optee-teec-sys = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-teec-sys", tag = "v0.9.0" }
+optee-utee = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-utee", tag = "v0.9.0" }
+optee-utee-build = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-utee-build", tag = "v0.9.0" }
+optee-utee-sys = { git = "https://github.com/apache/teaclave-trustzone-sdk.git", package = "optee-utee-sys", tag = "v0.9.0" }
+
+# Release profile: opt-level 1 balances build speed and runtime performance.
+# The TA needs minimal code size for the TEE budget; the host benefits from
+# reduced binary size without sacrificing too much performance.
+[profile.release]
+opt-level = 1
+panic = "abort"
+lto = true

@@ -18,7 +18,17 @@ fn main() {
         println!("cargo:rerun-if-env-changed=OPTEE_CLIENT_EXPORT");
     }
 
-    let uuid_raw = fs::read_to_string("uuid.txt").expect("uuid.txt present in the host crate root");
+    // Read UUID from ta/uuid.txt in the workspace root.
+    // CARGO_MANIFEST_DIR points to host/, so we go one parent to reach
+    // the workspace root, then join ta/uuid.txt.
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
+    let uuid_path = Path::new(&manifest_dir)
+        .parent()
+        .expect("CARGO_MANIFEST_DIR should have a parent")
+        .join("ta")
+        .join("uuid.txt");
+    let uuid_raw =
+        fs::read_to_string(&uuid_path).expect("ta/uuid.txt must be present in the workspace root");
     let uuid = uuid_raw.trim();
     assert!(!uuid.is_empty(), "uuid.txt must not be empty");
     assert_eq!(
@@ -50,14 +60,8 @@ fn main() {
     println!("cargo:rerun-if-env-changed=TA_DEV_KIT_DIR");
     println!("cargo:rerun-if-env-changed=OPTEE_CLIENT_EXPORT");
     println!("cargo:rerun-if-env-changed=CROSS_COMPILE");
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
-    let source_uuid = Path::new(&manifest_dir)
-        .parent()
-        .expect("CARGO_MANIFEST_DIR should have a parent")
-        .join("ta")
-        .join("uuid.txt");
     println!(
         "cargo:rerun-if-changed={}",
-        source_uuid.to_str().expect("valid path")
+        uuid_path.to_str().expect("valid path")
     );
 }

@@ -3,17 +3,16 @@
 optee_examples/
 !.envrc.example
 .aws
+!README.md
+**/*.md
 
 # Rust build artifacts
 **/target/
 **/*.rs.bk
 **/*.rs.bak
-Cargo.lock
-crates/trustzone-sdk
 
 # TA and host build artifacts
-ta/dyn_list
 host/uuid.txt
 host/hello-world-host
 ta/*.ta
-dyn_list
+**/dyn_list

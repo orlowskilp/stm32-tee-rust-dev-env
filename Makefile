@@ -45,15 +45,17 @@ DEPLOY_USER ?= $(shell whoami)
 
 # ── Host application ───────────────────────────────────────────────────────────
 # Default name of the host application binary. Can be overridden on the command line
-# (`make VAR=value`) or via environment variable. The host/Makefile computes this
-# dynamically from `cargo pkgid`, so this default is only used when the parent
-# Makefile passes it explicitly (see `host` and `deploy` targets).
-HOST_APP ?= $(shell cargo pkgid --manifest-path host/Cargo.toml | awk -F '#' '{ print $$2 }' | awk -F '@' '{ print $$1 }')
+# (`make VAR=value`) or via environment variable.
+HOST_APP ?= hello-world-host
 
 # ── UUID ───────────────────────────────────────────────────────────────────────
 # Path to the file containing the TA UUID. Can be overridden on the command line
 # (`make VAR=value`) or via environment variable.
 UUID ?= $(shell if [ -f ta/uuid.txt ]; then cat ta/uuid.txt; else echo "00000000-0000-0000-0000-000000000000"; fi)
+
+# ── Cargo Verbose Flag ─────────────────────────────────────────────────────────
+V ?=
+CARGO_VERBOSE := $(if $(V),--verbose,)
 
 .PHONY: all
 all: ta host
@@ -64,31 +66,49 @@ init: check-uuid
 	uuidgen > ta/uuid.txt
 
 # ── Build TA ───────────────────────────────────────────────────────────────────
-# Delegates to ta/Makefile with required variables.
+# Builds the TA via cargo, strips the binary with objcopy, and signs it.
 .PHONY: ta
-ta: check-cargo
-	@$(MAKE) -C ta \
-		UUID=$(UUID) \
-		CROSS_COMPILE=$(CROSS_COMPILE) \
-		TA_SIGN_KEY=$(TA_SIGN_KEY) \
-		TA_SIGN_SCRIPT=$(TA_SIGN_SCRIPT) \
-		TARGET=$(TARGET)
+ta: check-cargo check-uuid-file
+	@echo "=== Building TA (UUID=$(UUID)) ==="
+	@$(MAKE) copy-uuid
+	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
+	cargo $(CARGO_VERBOSE) build \
+		-p hello-world-ta \
+		--target $(TARGET) \
+		--release
+	$(CROSS_COMPILE)objcopy --strip-unneeded \
+		target/$(TARGET)/release/hello-world-ta \
+		target/$(TARGET)/release/stripped_ta
+	@if [ -n "$(TA_SIGN_KEY)" ] && [ -n "$(TA_SIGN_SCRIPT)" ]; then \
+		python3 $(TA_SIGN_SCRIPT) --uuid $(UUID) --key $(TA_SIGN_KEY) \
+			--in target/$(TARGET)/release/stripped_ta \
+			--out target/$(TARGET)/release/$(UUID).ta; \
+		echo "=== TA signed: target/$(TARGET)/release/$(UUID).ta ==="; \
+	else \
+		echo "=== ERROR: Cannot build signed TA — set TA_SIGN_KEY and TA_SIGN_SCRIPT ===" >&2; \
+		exit 1; \
+	fi
+	cp target/$(TARGET)/release/$(UUID).ta ta/ || exit 1
 
 # ── Build Host ─────────────────────────────────────────────────────────────────
-# Delegates to host/Makefile.
+# Builds the host app via cargo and copies the binary to the host/ directory.
 .PHONY: host
 host: check-cargo copy-uuid
-	@$(MAKE) -C host \
-		UUID=$(UUID) \
-		CROSS_COMPILE=$(CROSS_COMPILE) \
-		OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
-		TARGET=$(TARGET)
+	OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
+	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
+	cargo $(CARGO_VERBOSE) build \
+		-p hello-world-host \
+		--target $(TARGET) \
+		--release
+	cp target/$(TARGET)/release/hello-world-host host/ || exit 1
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
 .PHONY: clean
-clean:
-	@$(MAKE) -C ta clean
-	@$(MAKE) -C host clean
+clean: check-cargo
+	cargo clean
+	rm -f host/$(HOST_APP)
+	rm -f ta/*.ta
+	rm -f dyn_list
 
 # ── Deploy ────────────────────────────────────────────────────────────────────
 # Deploy the TA and host app to an STM32MP2 board running OP-TEE.
@@ -127,23 +147,33 @@ deploy:
 .PHONY: format
 format: check-cargo check-dprint
 	dprint fmt
-	@$(MAKE) -C ta format
-	@$(MAKE) -C host format
+	cargo fmt
 
 .PHONY: lint
 lint: check-cargo check-dprint copy-uuid
-	@$(MAKE) -C ta lint \
-		UUID=$(UUID) \
-		CROSS_COMPILE=$(CROSS_COMPILE) \
-		TA_SIGN_KEY=$(TA_SIGN_KEY) \
-		TA_SIGN_SCRIPT=$(TA_SIGN_SCRIPT) \
-		TARGET=$(TARGET)
-	@$(MAKE) -C host lint \
-		CROSS_COMPILE=$(CROSS_COMPILE) \
-		OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
-		UUID=$(UUID) \
-		TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
-		TARGET=$(TARGET)
+	dprint check
+	cargo fmt --check
+	@echo "=== Linting TA (no_std) ==="
+	# The TA is a cdylib with no binary targets, so --bins would cause cargo check
+	# and cargo clippy to be a no-op. Omit --bins to lint the entire TA crate.
+	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
+	cargo $(CARGO_VERBOSE) check -p hello-world-ta \
+		--target $(TARGET) \
+		--release
+	cargo $(CARGO_VERBOSE) clippy -p hello-world-ta \
+		--target $(TARGET) \
+		--release \
+		-- -D warnings
+	@echo "=== Linting Host (std) ==="
+	OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
+	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
+	cargo $(CARGO_VERBOSE) check -p hello-world-host \
+		--all-targets \
+		--target $(TARGET)
+	cargo $(CARGO_VERBOSE) clippy -p hello-world-host \
+		--all-targets \
+		--target $(TARGET) \
+		-- -D warnings
 
 .PHONY: copy-uuid
 copy-uuid:
@@ -160,3 +190,7 @@ check-cargo:
 .PHONY: check-uuid
 check-uuid:
 	@command -v uuidgen >/dev/null 2>&1 || (echo "uuidgen is not installed." && exit 1)
+
+.PHONY: check-uuid-file
+check-uuid-file:
+	@test -f ta/uuid.txt || (echo "UUID file not found. Run 'make init' first." && exit 1)

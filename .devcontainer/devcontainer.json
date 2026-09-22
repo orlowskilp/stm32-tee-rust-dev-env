@@ -47,6 +47,7 @@
           "CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG": "false"
         },
         "rust-analyzer.cargo.loadOutDirsFromCheck": true,
+        "rust-analyzer.check.extraArgs": [],
         "rust-client.rustupPath": "/home/vscode/.cargo/bin/rustup"
       },
       "extensions": [
