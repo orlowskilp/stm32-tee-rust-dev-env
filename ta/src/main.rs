@@ -50,7 +50,7 @@ fn ta_invoke_command(cmd_id: u32, params: &mut Parameters) -> Result<()> {
     // TEE_Param array; the type check above confirms that value was set in this slot.
     let mut value = unsafe { params.0.as_value() }?;
 
-    let cmd = Command::from_raw(cmd_id).ok_or(Error::from(ErrorKind::BadParameters))?;
+    let cmd = Command::try_from(cmd_id).map_err(|_| Error::from(ErrorKind::BadParameters))?;
     match cmd {
         Command::IncValue => value
             .a()
