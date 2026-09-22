@@ -6,7 +6,10 @@
     "**/*.{yaml,yml}",
     "**/Dockerfile"
   ],
-  "excludes": ["**/target"],
+  "excludes": [
+    "**/target",
+    "**/target-test"
+  ],
   "plugins": [
     "https://plugins.dprint.dev/toml-0.7.0.wasm",
     "https://plugins.dprint.dev/dockerfile-0.4.1.wasm",

@@ -28,8 +28,32 @@ TA_SIGN_SCRIPT ?= $(TA_DEV_KIT_DIR)/scripts/sign_encrypt.py
 OPTEE_CLIENT_EXPORT ?= /opt/sdk/sysroots/cortexa35-ostl-linux
 
 # ── Build Target ───────────────────────────────────────────────────────────────
-# Rust build target triple. Override on the command line or via environment variable.
+# Rust build target triple for building the TA and host application binaries.
+# Override on the command line or via environment variable.
 TARGET ?= aarch64-unknown-linux-gnu
+
+# ── Test Target ────────────────────────────────────────────────────────────────
+# Rust build target triple for cargo test.  Defaults to x86_64-unknown-linux-gnu
+# so tests execute natively without cross-linker issues.  Override for
+# cross-compilation tests (e.g. TEST_TARGET=aarch64-unknown-linux-gnu).  When
+# cross-compiling, point the linker at the appropriate toolchain via CC_FOR_TARGET.
+#
+# Note: the TA crate (hello-world-ta) is excluded from tests (no_std, runs only
+# on the TEE device).  The host crate (hello-world-host) is only testable on
+# aarch64 (depends on ARM-specific OP-TEE libraries).  ta-common is always
+# tested because it is platform-independent.
+TEST_TARGET ?= x86_64-unknown-linux-gnu
+
+# ── Test Cargo Target Directory ───────────────────────────────────────────────
+# Separate output directory from the main build so tests never collide.
+TEST_CARGO_TARGET_DIR ?= target-test
+
+# ── Test Packages ──────────────────────────────────────────────────────────────
+# Crates to test.  ta-common is always included (platform-independent).
+# hello-world-host is added automatically when testing on aarch64.
+TEST_PACKAGES := ta-common
+TEST_TARGET_ARCH := $(firstword $(subst -, ,$(TEST_TARGET)))
+TEST_PACKAGES += $(if $(filter aarch64,$(TEST_TARGET_ARCH)),hello-world-host)
 
 # ── Environment Variables ─────────────────────────────────────────────────────
 # Defaults for cross-compilation and OP-TEE SDK paths.
@@ -102,13 +126,46 @@ host: check-cargo copy-uuid
 		--release
 	cp target/$(TARGET)/release/hello-world-host host/ || exit 1
 
-# ── Clean ─────────────────────────────────────────────────────────────────────
-.PHONY: clean
-clean: check-cargo
-	cargo clean
-	rm -f host/$(HOST_APP)
-	rm -f ta/*.ta
-	rm -f dyn_list
+# ── Test ─────────────────────────────────────────────────────────────────────
+# Runs cargo test for the workspace.  The TA is excluded (no_std, runs only on
+# the TEE device).  The host is excluded on non-aarch64 targets (it depends on
+# ARM-specific libraries).  Override TEST_TARGET and CC_FOR_TARGET to target a
+# different platform.  By default tests run natively on x86_64.
+.PHONY: test
+test: check-cargo copy-uuid
+	@$(info Testing $(TEST_TARGET) — $(TEST_CARGO_TARGET_DIR)/$(TEST_TARGET)/release)
+	OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
+	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
+	CC_FOR_TARGET=$(CC_FOR_TARGET) \
+	CARGO_TARGET_DIR=$(TEST_CARGO_TARGET_DIR) \
+	cargo $(CARGO_VERBOSE) test \
+		$(foreach p,$(TEST_PACKAGES),-p $(p)) \
+		--target $(TEST_TARGET) \
+		--release
+
+.PHONY: lint
+lint: check-cargo check-dprint copy-uuid
+	dprint check
+	cargo fmt --check
+	@echo "=== Linting TA (no_std) ==="
+	# The TA is a cdylib with no binary targets, so --bins would cause cargo check
+	# and cargo clippy to be a no-op. Omit --bins to lint the entire TA crate.
+	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
+	cargo $(CARGO_VERBOSE) check -p hello-world-ta \
+		--target $(TARGET) \
+		--release
+	cargo $(CARGO_VERBOSE) clippy -p hello-world-ta \
+		--target $(TARGET) \
+		--release \
+		-- -D warnings
+	@echo "=== Linting Host (std) ==="
+	OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
+	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
+	cargo $(CARGO_VERBOSE) clippy -p hello-world-host \
+		--all-targets \
+		--target $(TARGET) \
+		--release \
+		-- -D warnings
 
 # ── Deploy ────────────────────────────────────────────────────────────────────
 # Deploy the TA and host app to an STM32MP2 board running OP-TEE.
@@ -149,29 +206,14 @@ format: check-cargo check-dprint
 	dprint fmt
 	cargo fmt
 
-.PHONY: lint
-lint: check-cargo check-dprint copy-uuid
-	dprint check
-	cargo fmt --check
-	@echo "=== Linting TA (no_std) ==="
-	# The TA is a cdylib with no binary targets, so --bins would cause cargo check
-	# and cargo clippy to be a no-op. Omit --bins to lint the entire TA crate.
-	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
-	cargo $(CARGO_VERBOSE) check -p hello-world-ta \
-		--target $(TARGET) \
-		--release
-	cargo $(CARGO_VERBOSE) clippy -p hello-world-ta \
-		--target $(TARGET) \
-		--release \
-		-- -D warnings
-	@echo "=== Linting Host (std) ==="
-	OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
-	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
-	cargo $(CARGO_VERBOSE) clippy -p hello-world-host \
-		--all-targets \
-		--target $(TARGET) \
-		--release \
-		-- -D warnings
+# ── Clean ─────────────────────────────────────────────────────────────────────
+.PHONY: clean
+clean: check-cargo
+	cargo clean
+	rm -f host/$(HOST_APP)
+	rm -f ta/*.ta
+	rm -f dyn_list
+	rm -rf target-test
 
 .PHONY: copy-uuid
 copy-uuid:

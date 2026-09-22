@@ -8,6 +8,7 @@ optee_examples/
 
 # Rust build artifacts
 **/target/
+**/target-test/
 **/*.rs.bk
 **/*.rs.bak
 
