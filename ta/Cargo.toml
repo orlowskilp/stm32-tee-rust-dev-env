@@ -14,6 +14,7 @@ uuid-path = "uuid.txt"
 [dependencies]
 optee-utee = { workspace = true }
 optee-utee-sys = { workspace = true }
+ta-common = { path = "../ta-common" }
 
 [build-dependencies]
 optee-utee-build = { workspace = true }

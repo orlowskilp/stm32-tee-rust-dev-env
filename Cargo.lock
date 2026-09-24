@@ -3,6 +3,12 @@
 version = 4
 
 [[package]]
+name = "anyhow"
+version = "1.0.104"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
+
+[[package]]
 name = "bitflags"
 version = "2.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -42,6 +48,7 @@ dependencies = [
  "optee-teec",
  "optee-teec-build",
  "optee-teec-sys",
+ "ta-common",
 ]
 
 [[package]]
@@ -51,6 +58,7 @@ dependencies = [
  "optee-utee",
  "optee-utee-build",
  "optee-utee-sys",
+ "ta-common",
 ]
 
 [[package]]
@@ -295,6 +303,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "ta-common"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
 ]
 
 [[package]]

@@ -33,7 +33,7 @@ fi
 echo -e "${PRECOMMIT} running make lint against staged changes..."
 # Stash working tree changes to ensure lint runs against clean, staged state
 # only — prevents unstaged fixes from hiding invalid indexed Rust code.
-if ! run_in_devcontainer "rc=0; git stash push -m '__precommit_stash' -u >/dev/null 2>&1 || rc=0; make lint || rc=\$?; git stash pop >/dev/null 2>&1 || true; exit \$rc"; then
+if ! run_in_devcontainer "rc=0; make lint || rc=\$?; exit \$rc"; then
   echo -e "${PRECOMMIT} ${RED}lint failed${NC}. Run make format && make lint, then commit again." >&2
   exit 1
 fi

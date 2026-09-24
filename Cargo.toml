@@ -1,5 +1,5 @@
 [workspace]
-members = ["host", "ta"]
+members = ["host", "ta", "ta-common"]
 resolver = "2"
 
 [workspace.package]
