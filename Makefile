@@ -72,6 +72,11 @@ DEPLOY_USER ?= $(shell whoami)
 # (`make VAR=value`) or via environment variable.
 HOST_APP ?= hello-world-host
 
+# ── Trusted application (TA) ───────────────────────────────────────────────────
+# Path to the TA binary. Can be overridden on the command line
+# (`make VAR=value`) or via environment variable.
+TA ?= hello-world-ta
+
 # ── UUID ───────────────────────────────────────────────────────────────────────
 # Path to the file containing the TA UUID. Can be overridden on the command line
 # (`make VAR=value`) or via environment variable.
@@ -97,11 +102,11 @@ ta: check-cargo check-uuid-file
 	@$(MAKE) copy-uuid
 	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
 	cargo $(CARGO_VERBOSE) build \
-		-p hello-world-ta \
+		-p $(TA) \
 		--target $(TARGET) \
 		--release
 	$(CROSS_COMPILE)objcopy --strip-unneeded \
-		target/$(TARGET)/release/hello-world-ta \
+		target/$(TARGET)/release/$(TA) \
 		target/$(TARGET)/release/stripped_ta
 	@if [ -n "$(TA_SIGN_KEY)" ] && [ -n "$(TA_SIGN_SCRIPT)" ]; then \
 		python3 $(TA_SIGN_SCRIPT) --uuid $(UUID) --key $(TA_SIGN_KEY) \
@@ -121,10 +126,10 @@ host: check-cargo copy-uuid
 	OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
 	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
 	cargo $(CARGO_VERBOSE) build \
-		-p hello-world-host \
+		-p $(HOST_APP) \
 		--target $(TARGET) \
 		--release
-	cp target/$(TARGET)/release/hello-world-host host/ || exit 1
+	cp target/$(TARGET)/release/$(HOST_APP) host/ || exit 1
 
 # ── Test ─────────────────────────────────────────────────────────────────────
 # Runs cargo test for the workspace.  The TA is excluded (no_std, runs only on
@@ -151,17 +156,17 @@ lint: check-cargo check-dprint copy-uuid
 	# The TA is a cdylib with no binary targets, so --bins would cause cargo check
 	# and cargo clippy to be a no-op. Omit --bins to lint the entire TA crate.
 	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
-	cargo $(CARGO_VERBOSE) check -p hello-world-ta \
+	cargo $(CARGO_VERBOSE) check -p $(TA) \
 		--target $(TARGET) \
 		--release
-	cargo $(CARGO_VERBOSE) clippy -p hello-world-ta \
+	cargo $(CARGO_VERBOSE) clippy -p $(TA) \
 		--target $(TARGET) \
 		--release \
 		-- -D warnings
 	@echo "=== Linting Host (std) ==="
 	OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
 	TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR) \
-	cargo $(CARGO_VERBOSE) clippy -p hello-world-host \
+	cargo $(CARGO_VERBOSE) clippy -p $(HOST_APP) \
 		--all-targets \
 		--target $(TARGET) \
 		--release \

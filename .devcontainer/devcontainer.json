@@ -70,7 +70,7 @@
     }
   },
   "runArgs": [
-    "--name=stm32-tee-dev",
+    "--name=stm32mp2-optee-dev",
     "--platform=linux/amd64",
     "--cap-drop=NET_RAW",
     "--cap-drop=MKNOD",

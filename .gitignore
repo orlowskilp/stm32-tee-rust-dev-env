@@ -5,6 +5,7 @@ optee_examples/
 .aws
 !README.md
 **/*.md
+.devcontainer/docker_gid
 
 # Rust build artifacts
 **/target/

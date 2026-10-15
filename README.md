@@ -27,7 +27,7 @@ make ta host
 make deploy BOARD_ADDRESS=<board-address>
 ```
 
-See QUICKSTART.md for detailed instructions, signing key configuration, and runtime verification.
+See [QUICKSTART.md](QUICKSTART.md) for detailed instructions, signing key configuration, and runtime verification.
 
 ## Prerequisites
 
